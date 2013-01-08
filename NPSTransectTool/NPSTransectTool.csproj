@@ -1,0 +1,290 @@
+﻿<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="3.5">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>9.0.30729</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{0E8BF0E2-E0D3-49F3-BCB6-FEA93BBB3DFD}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>NPSTransectTool</RootNamespace>
+    <AssemblyName>NPSTransectTool</AssemblyName>
+    <FileUpgradeFlags>
+    </FileUpgradeFlags>
+    <OldToolsVersion>2.0</OldToolsVersion>
+    <UpgradeBackupLocation>
+    </UpgradeBackupLocation>
+    <PublishUrl>http://localhost/NPSTransectTool/</PublishUrl>
+    <Install>true</Install>
+    <InstallFrom>Web</InstallFrom>
+    <UpdateEnabled>true</UpdateEnabled>
+    <UpdateMode>Foreground</UpdateMode>
+    <UpdateInterval>7</UpdateInterval>
+    <UpdateIntervalUnits>Days</UpdateIntervalUnits>
+    <UpdatePeriodically>false</UpdatePeriodically>
+    <UpdateRequired>false</UpdateRequired>
+    <MapFileExtensions>true</MapFileExtensions>
+    <ApplicationRevision>0</ApplicationRevision>
+    <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
+    <IsWebBootstrapper>true</IsWebBootstrapper>
+    <UseApplicationTrust>false</UseApplicationTrust>
+    <BootstrapperEnabled>true</BootstrapperEnabled>
+    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <RegisterForComInterop>true</RegisterForComInterop>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <RegisterForComInterop>true</RegisterForComInterop>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="ESRI.ArcGIS.ADF, Version=9.3.0.1770, Culture=neutral, PublicKeyToken=8fc3cc631e44ad86, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="ESRI.ArcGIS.ArcMap, Version=9.3.0.1770, Culture=neutral, PublicKeyToken=8fc3cc631e44ad86, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="ESRI.ArcGIS.ArcMapUI, Version=9.3.0.1770, Culture=neutral, PublicKeyToken=8fc3cc631e44ad86, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="ESRI.ArcGIS.Carto, Version=9.3.0.1770, Culture=neutral, PublicKeyToken=8fc3cc631e44ad86, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="ESRI.ArcGIS.CartoUI, Version=9.3.0.1770, Culture=neutral, PublicKeyToken=8fc3cc631e44ad86, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="ESRI.ArcGIS.Catalog, Version=9.3.0.1770, Culture=neutral, PublicKeyToken=8fc3cc631e44ad86, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="ESRI.ArcGIS.CatalogUI, Version=9.3.0.1770, Culture=neutral, PublicKeyToken=8fc3cc631e44ad86, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="ESRI.ArcGIS.DataSourcesFile, Version=9.3.0.1770, Culture=neutral, PublicKeyToken=8fc3cc631e44ad86, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="ESRI.ArcGIS.DataSourcesGDB, Version=9.3.0.1770, Culture=neutral, PublicKeyToken=8fc3cc631e44ad86, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="ESRI.ArcGIS.DataSourcesRaster, Version=9.3.0.1770, Culture=neutral, PublicKeyToken=8fc3cc631e44ad86, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="ESRI.ArcGIS.DataSourcesRasterUI, Version=9.3.0.1770, Culture=neutral, PublicKeyToken=8fc3cc631e44ad86, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="ESRI.ArcGIS.Display, Version=9.3.0.1770, Culture=neutral, PublicKeyToken=8fc3cc631e44ad86, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="ESRI.ArcGIS.DisplayUI, Version=9.3.0.1770, Culture=neutral, PublicKeyToken=8fc3cc631e44ad86, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="ESRI.ArcGIS.Editor, Version=9.3.0.1770, Culture=neutral, PublicKeyToken=8fc3cc631e44ad86, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="ESRI.ArcGIS.Framework, Version=9.3.0.1770, Culture=neutral, PublicKeyToken=8fc3cc631e44ad86, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="ESRI.ArcGIS.GeoAnalyst, Version=9.3.0.1770, Culture=neutral, PublicKeyToken=8fc3cc631e44ad86, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="ESRI.ArcGIS.Geodatabase, Version=9.3.0.1770, Culture=neutral, PublicKeyToken=8fc3cc631e44ad86, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="ESRI.ArcGIS.GeoDatabaseUI, Version=9.3.0.1770, Culture=neutral, PublicKeyToken=8fc3cc631e44ad86, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="ESRI.ArcGIS.Geometry, Version=9.3.0.1770, Culture=neutral, PublicKeyToken=8fc3cc631e44ad86, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="ESRI.ArcGIS.Geoprocessing, Version=9.3.0.1770, Culture=neutral, PublicKeyToken=8fc3cc631e44ad86, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="ESRI.ArcGIS.SpatialAnalyst, Version=9.3.0.1770, Culture=neutral, PublicKeyToken=8fc3cc631e44ad86, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="ESRI.ArcGIS.System, Version=9.3.0.1770, Culture=neutral, PublicKeyToken=8fc3cc631e44ad86, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="ESRI.ArcGIS.SystemUI, Version=9.3.0.1770, Culture=neutral, PublicKeyToken=8fc3cc631e44ad86, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Configuration.Install" />
+    <Reference Include="System.Core">
+      <RequiredTargetFramework>3.5</RequiredTargetFramework>
+    </Reference>
+    <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Management" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.XML" />
+    <Reference Include="System.Xml.Linq">
+      <RequiredTargetFramework>3.5</RequiredTargetFramework>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="BufferCommand.cs" />
+    <Compile Include="BufferToolForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="BufferToolForm.Designer.cs">
+      <DependentUpon>BufferToolForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="EditArcPadSettings.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="EditArcPadSettings.Designer.cs">
+      <DependentUpon>EditArcPadSettings.cs</DependentUpon>
+    </Compile>
+    <Compile Include="HasTransectForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="HasTransectForm.Designer.cs">
+      <DependentUpon>HasTransectForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="HelpMessageForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="HelpMessageForm.Designer.cs">
+      <DependentUpon>HelpMessageForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="ImportBoundaryForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ImportBoundaryForm.Designer.cs">
+      <DependentUpon>ImportBoundaryForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="ImportTransRndPntsForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ImportTransRndPntsForm.Designer.cs">
+      <DependentUpon>ImportTransRndPntsForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="InfoForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="InfoForm.Designer.cs">
+      <DependentUpon>InfoForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="NewSurveyBoundaryForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="NewSurveyBoundaryForm.Designer.cs">
+      <DependentUpon>NewSurveyBoundaryForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="NPSEventHandlers.cs" />
+    <Compile Include="NPSGlobal.cs" />
+    <Compile Include="NPSToolbar.cs" />
+    <Compile Include="NPSTransectToolInstaller.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="NPSTransectToolInstaller.Designer.cs">
+      <DependentUpon>NPSTransectToolInstaller.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="StraightLineCommand.cs" />
+    <Compile Include="StraightLineForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="StraightLineForm.Designer.cs">
+      <DependentUpon>StraightLineForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="TitleDisplayCommand.cs" />
+    <Compile Include="TransectToolCommand.cs" />
+    <Compile Include="TransectToolForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="TransectToolForm.Designer.cs">
+      <DependentUpon>TransectToolForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Utility.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <BootstrapperPackage Include="Microsoft.Net.Client.3.5">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework Client Profile</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.2.0">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 2.0 %28x86%29</ProductName>
+      <Install>true</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.3.0">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.0 %28x86%29</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5 SP1</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="StraightLineCommand.bmp" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="BufferCommand.bmp" />
+    <EmbeddedResource Include="BufferToolForm.resx">
+      <DependentUpon>BufferToolForm.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="EditArcPadSettings.resx">
+      <DependentUpon>EditArcPadSettings.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="HasTransectForm.resx">
+      <DependentUpon>HasTransectForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="HelpMessageForm.resx">
+      <DependentUpon>HelpMessageForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="ImportBoundaryForm.resx">
+      <DependentUpon>ImportBoundaryForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="ImportTransRndPntsForm.resx">
+      <DependentUpon>ImportTransRndPntsForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="InfoForm.resx">
+      <DependentUpon>InfoForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="NewSurveyBoundaryForm.resx">
+      <DependentUpon>NewSurveyBoundaryForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="StraightLineForm.resx">
+      <DependentUpon>StraightLineForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="TransectToolCommand.bmp" />
+    <EmbeddedResource Include="TransectToolForm.resx">
+      <DependentUpon>TransectToolForm.cs</DependentUpon>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="NPSConfig.xml" />
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

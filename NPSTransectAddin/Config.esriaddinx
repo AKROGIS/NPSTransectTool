@@ -1,0 +1,31 @@
+﻿<ESRI.Configuration xmlns="http://schemas.esri.com/Desktop/AddIns" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <Name>Aerial Animal Survey Tools</Name>
+  <AddInID>{242c2544-d9d7-47c2-b121-56a8dec584ad}</AddInID>
+  <Description>Generates transects, buffers, and distances for aerial animal surveys.</Description>
+  <Version>3.0</Version>
+  <Image>Images\airplane-icon.png</Image>
+  <Author>Regan Sarwas</Author>
+  <Company>National Park Service, Alaska</Company>
+  <Date>1/9/2013</Date>
+  <Targets>
+    <Target name="Desktop" version="10.0" />
+  </Targets>
+  <AddIn language="CLR" library="NPSTransectAddin.dll" namespace="NPSTransectAddin">
+    <ArcMap>
+      <Commands>
+        <Button id="NPS_TransectAddin_StraightLineButton" class="StraightLineButton" message="Calculates the shortest distance from a sighting/horizon to the transect." caption="Straight Line" tip="Distance to sightings" category="NPS Transects" image="Images\StraightLineCommand.bmp" />
+        <Button id="NPS_TransectAddin_BufferButton" class="BufferButton" message="Builds buffers for a selection of transects." caption="Buffer" tip="Build transect buffers" category="NPS Transects" image="Images\BufferCommand.bmp" />
+        <Button id="NPS_TransectAddin_TransectButton" class="TransectButton" message="Generates transects for a survey." caption="Transect" tip="Create survey transects" category="NPS Transects" image="Images\TransectToolCommand.bmp" />
+      </Commands>
+      <Toolbars>
+        <Toolbar id="NPS_Transect" caption="NPS Transects" showInitially="false">
+          <Items>
+            <ComboBox refID="NPS_TransectAddin_StraightLineButton" />
+            <ComboBox refID="NPS_TransectAddin_BufferButton" />
+            <ComboBox refID="NPS_TransectAddin_TransectButton" />
+          </Items>
+        </Toolbar>
+      </Toolbars>
+    </ArcMap>
+  </AddIn>
+</ESRI.Configuration>

@@ -10,7 +10,7 @@ using ESRI.ArcGIS.ArcMapUI;
 
 namespace NPSTransectTool
 {
-    sealed class NPSGlobal
+    public sealed class NPSGlobal
     {
         private static volatile NPSGlobal instance;
         private static object syncRoot = new System.Object();

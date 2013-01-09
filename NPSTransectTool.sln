@@ -5,6 +5,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NPSTransectTool", "NPSTrans
 EndProject
 Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "NPSTransectToolSetup", "NPSTransectToolSetup\NPSTransectToolSetup.vdproj", "{6E25E8B0-0433-476D-A0F0-CF6386F17BD4}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NPSTransectAddin", "NPSTransectAddin\NPSTransectAddin.csproj", "{261B8CE0-3563-49DE-A2E6-0C0F887E1565}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -17,6 +19,10 @@ Global
 		{0E8BF0E2-E0D3-49F3-BCB6-FEA93BBB3DFD}.Release|Any CPU.Build.0 = Release|Any CPU
 		{6E25E8B0-0433-476D-A0F0-CF6386F17BD4}.Debug|Any CPU.ActiveCfg = Debug
 		{6E25E8B0-0433-476D-A0F0-CF6386F17BD4}.Release|Any CPU.ActiveCfg = Release
+		{261B8CE0-3563-49DE-A2E6-0C0F887E1565}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{261B8CE0-3563-49DE-A2E6-0C0F887E1565}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{261B8CE0-3563-49DE-A2E6-0C0F887E1565}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{261B8CE0-3563-49DE-A2E6-0C0F887E1565}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

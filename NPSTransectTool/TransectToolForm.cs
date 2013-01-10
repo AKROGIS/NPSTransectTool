@@ -69,7 +69,7 @@ namespace NPSTransectTool
                 if (Util.IsNumeric(txtMaxElevation.Text) == false)
                     ErrorMessage = "Please enter a valid numeric value for max elevation";
 
-           
+
 
             if (string.IsNullOrEmpty(ErrorMessage))
             {
@@ -216,7 +216,7 @@ namespace NPSTransectTool
         private void btnGenerateRandPts_Click(object sender, EventArgs e)
         {
             int SurveyID, TotalRandPts = 0, NewBatchID = 0, RandPointGenerated = 0;
-            string ErrorMessage = "", DEMUnits="";
+            string ErrorMessage = "", DEMUnits = "";
             double StartX = -1, StartY = -1, GridPointSpacing = 0;
             IRasterDataset ThisRasterDS = null;
             ESRI.ArcGIS.Geometry.IPolygon SurveyBoundary;
@@ -366,7 +366,7 @@ namespace NPSTransectTool
                 try
                 {
                     //add elevation values to random points
-                    Util.AddZValuesToPoints(SurveyID, NewBatchID, ThisRasterDS as IGeoDataset,DEMUnits, ref ErrorMessage);
+                    Util.AddZValuesToPoints(SurveyID, NewBatchID, ThisRasterDS as IGeoDataset, DEMUnits, ref ErrorMessage);
                 }
                 catch (Exception ex)
                 {
@@ -467,7 +467,7 @@ namespace NPSTransectTool
             if (string.IsNullOrEmpty(ErrorMessage))
             {
                 if (cboDEMFileUnits.SelectedIndex == 0)
-                    ErrorMessage =  "Please set a valid unit for the DEM file from the Config tab.";
+                    ErrorMessage = "Please set a valid unit for the DEM file from the Config tab.";
             }
 
             Util.SetProgressMessage("Clipping Raster", 2);

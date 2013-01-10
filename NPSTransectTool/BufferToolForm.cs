@@ -145,13 +145,13 @@ namespace NPSTransectTool
                     foreach (string ObservedSide in observedSides)
                     {
                         IQueryFilter ThisQueryFilter = new QueryFilterClass
-                            {
-                                WhereClause = "SegType='OnTransect' and TransectID=" + TransectID
-                                              + " and SurveyID=" + surveyId +
-                                              //everyone observes in the same direction so get direction of any observer that has it
-                                              " and (PilotDir='" + ObservedSide + "' or " + " Obs1Dir='" + ObservedSide
-                                              + "' or Obs2Dir='" + ObservedSide + "')"
-                            };
+                        {
+                            WhereClause = "SegType='OnTransect' and TransectID=" + TransectID
+                                          + " and SurveyID=" + surveyId +
+                                //everyone observes in the same direction so get direction of any observer that has it
+                                          " and (PilotDir='" + ObservedSide + "' or " + " Obs1Dir='" + ObservedSide
+                                          + "' or Obs2Dir='" + ObservedSide + "')"
+                        };
 
                         //get all the segments for the current transect (or all the selected segments 
                         //from the current transect)

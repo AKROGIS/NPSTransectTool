@@ -7,7 +7,7 @@ namespace NPSTransectTool
     {
         private FormOptions m_UserFormOptions;
 
-        public FormOptions UserFormOptions{get { return m_UserFormOptions; }}
+        public FormOptions UserFormOptions { get { return m_UserFormOptions; } }
 
         public HasTransectForm()
         {

@@ -18,7 +18,7 @@ namespace NPSTransectTool
 
         private void btnImport_Click(object sender, EventArgs e)
         {
-            string errorMessage="";
+            string errorMessage = "";
             IFeature importFeature;
 
 
@@ -54,7 +54,7 @@ namespace NPSTransectTool
             //make sure the shapefile has the same spatial reference as the NPS geodatabase featureclasses
             ISpatialReference defaultSpatRef = Util.GetDefaultSpatialReference();
             ISpatialReference importSpatRef = ((IGeoDataset)selShapeFile).SpatialReference;
-            if (Util.CompareSpatialReference(defaultSpatRef, importSpatRef)==false)
+            if (Util.CompareSpatialReference(defaultSpatRef, importSpatRef) == false)
             {
                 MessageBox.Show("(Err) The selected ShapeFile has the coordinate system '"
                 + importSpatRef.Name + "' which is different "
@@ -105,7 +105,7 @@ namespace NPSTransectTool
                 MessageBox.Show(errorMessage);
                 return;
             }
-            
+
             int ImportCount = 0;
 
             //loop through each shapefile boundary and inport it into database

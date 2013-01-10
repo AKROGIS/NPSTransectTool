@@ -73,7 +73,7 @@ namespace NPSTransectTool
                 thisFeature.Value[surveyIdIndex] = nextSurveyId;
                 thisFeature.Value[surveyNameIndex] = surveyName;
                 thisFeature.Value[parkIndex] = form.txtPark.Text;
-                thisFeature.Value[commentsIndex] =  form.txtComments.Text;
+                thisFeature.Value[commentsIndex] = form.txtComments.Text;
                 thisFeature.Store();
             }
         }

@@ -250,7 +250,7 @@ namespace NPSTransectTool
                     ThisCurve = TransectFFeature.ShapeCopy as ICurve;
 
                     int segID = (int)Util.SafeConvert(TransectFFeature.get_Value(
-                        TransectFFeature.Fields.FindField("SegmentID")),typeof(int));
+                        TransectFFeature.Fields.FindField("SegmentID")), typeof(int));
 
                     //determine the distance between the two
                     if (ThisCurve != null && ThisPoint != null)

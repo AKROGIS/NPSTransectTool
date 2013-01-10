@@ -158,7 +158,7 @@ namespace NPSTransectTool
             int featureCount = 0;
             var newOIDs = new List<int>();
             string whereClause = "";
-            string demUnits="";
+            string demUnits = "";
             double targetLength = -1;
 
 
@@ -310,9 +310,9 @@ namespace NPSTransectTool
                 try
                 {
                     //load our features into temp feature class
-                    LoadTempImportFc(surveyId, firstLoadBatchId, nextTransectId, importFCursor, targetFc, 
-                        thisGeoRasterDs, targetLength, ref newOIDs,ref totalInExcluded, ref totalOutsideBndy, 
-                        ref totalPassed,demUnits, ref errorMessage);
+                    LoadTempImportFc(surveyId, firstLoadBatchId, nextTransectId, importFCursor, targetFc,
+                        thisGeoRasterDs, targetLength, ref newOIDs, ref totalInExcluded, ref totalOutsideBndy,
+                        ref totalPassed, demUnits, ref errorMessage);
 
                     //if we have less than 2 successful inports, delete the 1 that was inserted
                     if (totalPassed < 2 && importType == esriGeometryType.esriGeometryPoint)
@@ -340,7 +340,7 @@ namespace NPSTransectTool
                 if (importType == esriGeometryType.esriGeometryPoint)
                     Util.AddZValuesToPoints(surveyId, batchId, firstLoadBatchId, thisGeoRasterDs, demUnits, ref errorMessage);
 
-                
+
 
 
             Util.SetProgressMessage("");
@@ -358,7 +358,7 @@ namespace NPSTransectTool
 
         public void LoadTempImportFc(int SurveyID, int BatchID, int nextTransectId, IFeatureCursor importFCursor,
             IFeatureClass TempImportFC, IGeoDataset ThisDEM, double TargetLength, ref List<int> newOIDs,
-            ref int totalInExcluded, ref int totalOutsideBndy, ref int totalPassed,string thisDemUnits, ref string errorMessage)
+            ref int totalInExcluded, ref int totalOutsideBndy, ref int totalPassed, string thisDemUnits, ref string errorMessage)
         {
 
             IFeature importFeature;
@@ -378,7 +378,7 @@ namespace NPSTransectTool
             if (string.IsNullOrEmpty(errorMessage) == false) return;
 
 
-           
+
 
             esriGeometryType fType = TempImportFC.ShapeType;
 
@@ -469,7 +469,7 @@ namespace NPSTransectTool
 
 
                     int thisFieldIndex = importToBuffer.Fields.FindField("Flown");
-                    if (thisFieldIndex > -1) importToBuffer.Value[importToBuffer.Fields.FindField("Flown")] =  "N";
+                    if (thisFieldIndex > -1) importToBuffer.Value[importToBuffer.Fields.FindField("Flown")] = "N";
 
                     thisFieldIndex = importToBuffer.Fields.FindField("TransectID");
                     if (thisFieldIndex > -1) importToBuffer.Value[importToBuffer.Fields.FindField("TransectID")] = nextTransectId;
@@ -484,7 +484,7 @@ namespace NPSTransectTool
 
                     //add the name of the default projection
                     thisFieldIndex = importToBuffer.Fields.FindField("PROJECTION");
-                    if (thisFieldIndex > -1) importToBuffer.Value[thisFieldIndex] =  newTrnPolyline.SpatialReference.Name;
+                    if (thisFieldIndex > -1) importToBuffer.Value[thisFieldIndex] = newTrnPolyline.SpatialReference.Name;
 
                     thisFieldIndex = importToBuffer.Fields.FindField("TARGETLEN");
                     if (thisFieldIndex > -1) importToBuffer.Value[thisFieldIndex] = TargetLength;

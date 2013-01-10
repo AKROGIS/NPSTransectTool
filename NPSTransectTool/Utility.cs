@@ -338,7 +338,6 @@ namespace NPSTransectTool
         {
             ITable ThisTable = null;
             IFeatureWorkspace ThisFtrWS = null;
-            ;
 
             try
             {
@@ -1016,11 +1015,8 @@ namespace NPSTransectTool
         /// </summary>
         public static void DeleteFeatures(string NPSFCName, string WhereClause, ref string ErrorMessage)
         {
-            NPSGlobal NPS;
             ITable ThisTable;
             IQueryFilter ThisQueryFilter;
-
-            NPS = NPSGlobal.Instance;
 
             ThisTable = GetFeatureClass(NPSFCName, ref ErrorMessage) as ITable;
             if (string.IsNullOrEmpty(ErrorMessage) == false) return;
@@ -1043,12 +1039,9 @@ namespace NPSTransectTool
         /// </summary>
         public static void DeleteFeatures(IFeatureClass ThisFeatureClass, string WhereClause, ref string ErrorMessage)
         {
-            NPSGlobal NPS;
             IQueryFilter ThisQueryFilter;
             IFeature ThisFeature;
             IFeatureCursor ThisFCursor;
-
-            NPS = NPSGlobal.Instance;
 
             ThisQueryFilter = new QueryFilterClass();
             ThisQueryFilter.WhereClause = WhereClause;
@@ -1326,7 +1319,6 @@ namespace NPSTransectTool
             IGeoDataset IntRasterDS = null;
             IQueryFilter ThisQueryFilter;
             IRasterDescriptor ThisRasterDescriptor;
-            IGeoProcessorResult GeoResult = null;
             IGeoProcessor ThisGeoProcessor = null;
             IVariantArray GPParams;
             IFeatureClass NewElvPolyFC, BoundaryFC, ElvPolyFC;
@@ -1421,7 +1413,7 @@ namespace NPSTransectTool
                 GPParams.Add(Path.Combine(NPS.DatabasePath, TempAggFCName));
                 GPParams.Add("1 Meters");
 
-                GeoResult = ThisGeoProcessor.Execute("AggregatePolygons_management", GPParams, null);
+                ThisGeoProcessor.Execute("AggregatePolygons_management", GPParams, null);
             }
             catch (Exception ex)
             {
@@ -1501,7 +1493,6 @@ namespace NPSTransectTool
         public static void GenerateFlatAreaPolygons(int SurveyID, double MinSlope, double MaxSlope,
                                                     IGeoDataset ClippedRasterDS, ref string ErrorMessage)
         {
-            IGeoProcessorResult GeoResult = null;
             IGeoProcessor ThisGeoProcessor = null;
             IRasterDescriptor ThisRasterDescriptor;
             IConversionOp ThisConversionOp;
@@ -1509,8 +1500,7 @@ namespace NPSTransectTool
             IVariantArray GPParams;
             ISurfaceOp ThisSurfaceOp;
             IMathOp ThisMathOp;
-            IFeatureClass TempFlatAreasPolyFC = null,
-                          TempAggregateFC = null,
+            IFeatureClass TempAggregateFC = null,
                           TempAggregateClipFC = null,
                           BoundaryFC = null,
                           FlatAreasFC = null;
@@ -1593,10 +1583,10 @@ namespace NPSTransectTool
                 ThisRasterDescriptor.Create(IntRasterDS as IRaster, ThisQueryFilter, "Value");
 
                 ThisConversionOp = new RasterConversionOpClass();
-                TempFlatAreasPolyFC =
-                    ThisConversionOp.RasterDataToPolygonFeatureData(ThisRasterDescriptor as IGeoDataset,
-                                                                    NPS.Workspace, TempFlatAreasPolyFCName, true) as
-                    IFeatureClass;
+                var unused = ThisConversionOp.RasterDataToPolygonFeatureData(ThisRasterDescriptor as IGeoDataset,
+                                                                NPS.Workspace, TempFlatAreasPolyFCName, true) as IFeatureClass;
+                if (unused != null)
+                    return;
             }
             catch (Exception ex)
             {
@@ -1617,7 +1607,7 @@ namespace NPSTransectTool
                 GPParams.Add(Path.Combine(NPS.DatabasePath, TempAggregateFCName));
                 GPParams.Add("1 Meters");
 
-                GeoResult = ThisGeoProcessor.Execute("AggregatePolygons_management", GPParams, null);
+                ThisGeoProcessor.Execute("AggregatePolygons_management", GPParams, null);
             }
             catch (Exception ex)
             {
@@ -1770,8 +1760,7 @@ namespace NPSTransectTool
             IFeatureCursor InsertCursor;
             IFeatureBuffer InsertBuffer;
             IQueryFilter ThisQueryFilter;
-            int RandomPointOIDIndex,
-                TransectIDFieldIndex,
+            int TransectIDFieldIndex,
                 CorruptCount = 0,
                 TransectCount = 0,
                 ElevValFieldIndex,
@@ -1788,7 +1777,7 @@ namespace NPSTransectTool
                 ElevValFTFieldIndex;
             IPolyline NewTrnPolyline;
             IPoint TempPoint;
-            string TransType = "", ErrorMessage = "", DEMUnits = "";
+            string TransType = "", ErrorMessage = "";
 
             NPS = NPSGlobal.Instance;
 
@@ -1809,7 +1798,7 @@ namespace NPSTransectTool
             if (string.IsNullOrEmpty(ErorrMessage) == false) return;
 
 
-            DEMUnits = GetDatasetUnits(ClippedRasterDS, ref ErorrMessage);
+            GetDatasetUnits(ClippedRasterDS, ref ErorrMessage);
 
 
             //get next available batch id
@@ -1838,7 +1827,7 @@ namespace NPSTransectTool
 
             //rnd point indexes
             AcceptedFieldIndex = RandPointsFC.FindField("HASTRANS");
-            RandomPointOIDIndex = RandPointsFC.FindField(RandPointsFC.OIDFieldName);
+            RandPointsFC.FindField(RandPointsFC.OIDFieldName);
             ElevValFieldIndex = RandPointsFC.FindField("ELEV_M");
             ElevValFTFieldIndex = RandPointsFC.FindField("ELEV_FT");
 
@@ -2523,7 +2512,7 @@ namespace NPSTransectTool
         /// </summary>
         public static int GetRandomAngleInRange(int Angle, int RangeLeft, int RangeRight)
         {
-            int Counter, RandAngle, ReStartCounter, Val;
+            int Counter, RandAngle, ReStartCounter;
             int[] DegreeList, BannedValues;
 
 
@@ -2552,7 +2541,6 @@ namespace NPSTransectTool
                 {
                     ReStartCounter = RangeRight - (Counter - Angle);
                     if (ReStartCounter == 0) break;
-                    ;
                     Counter = 1;
                 }
 
@@ -2561,7 +2549,6 @@ namespace NPSTransectTool
 
             //set all the values in the ban range to the left to 1
             ReStartCounter = -1;
-            Val = (Angle - RangeLeft);
             for (Counter = Angle; Counter <= (Angle - RangeLeft); Counter--)
             {
                 if (ReStartCounter != -1)
@@ -2606,7 +2593,6 @@ namespace NPSTransectTool
         public static void AddZValuesToPoints(int SurveyID, int NewBatchID, int TempBatchID,
                                               IGeoDataset ThisRasterDS, string ThisDEMUnits, ref string ErrorMessage)
         {
-            IGeoProcessorResult GeoResult = null;
             IGeoProcessor ThisGeoProcessor = null;
             IVariantArray GPParams;
             IFeatureClass TempFCHolderFC = null, PointFC = null;
@@ -2654,7 +2640,7 @@ namespace NPSTransectTool
                     GPParams.Add(Path.Combine(NPS.Workspace.PathName, ((IDataset) PointFC).Name));
 
 
-                    GeoResult = ThisGeoProcessor.Execute("CreateFeatureClass_management", GPParams, null);
+                    ThisGeoProcessor.Execute("CreateFeatureClass_management", GPParams, null);
                 }
                 catch (Exception ex)
                 {
@@ -2681,7 +2667,7 @@ namespace NPSTransectTool
                 if (string.IsNullOrEmpty(ErrorMessage))
                     CopyFeatures(PointFC, CopyRandFilter, TempFCHolderFC, null, ref ErrorMessage);
 
-                int TestCount = FeatureCount(TempFCHolderFC, "");
+                FeatureCount(TempFCHolderFC, "");
             }
 
 
@@ -2703,7 +2689,7 @@ namespace NPSTransectTool
                     GPParams.Add(TempFCHolderFC);
                     GPParams.Add("Spot"); // field name to add
                     GPParams.Add(1); // Z-Factor
-                    GeoResult = ThisGeoProcessor.Execute("SurfaceSpot_3D", GPParams, null);
+                    ThisGeoProcessor.Execute("SurfaceSpot_3D", GPParams, null);
                 }
                 catch (Exception ex)
                 {
@@ -3401,7 +3387,6 @@ namespace NPSTransectTool
         {
             IVariantArray GPParams;
             IGeoProcessor ThisGeoProcessor = null;
-            IGeoProcessorResult GeoResult = null;
             IFeatureClass TempClipFC = null;
             NPSGlobal NPS;
 
@@ -3417,7 +3402,7 @@ namespace NPSTransectTool
                 GPParams.Add(ClipFC);
                 GPParams.Add(Path.Combine(NPS.DatabasePath, TempClipFCName));
 
-                GeoResult = ThisGeoProcessor.Execute("Clip_analysis", GPParams, null);
+                ThisGeoProcessor.Execute("Clip_analysis", GPParams, null);
 
                 DeleteLayerFromMap(TempClipFCName);
 
@@ -3446,12 +3431,8 @@ namespace NPSTransectTool
         {
             IVariantArray GPParams;
             IGeoProcessor ThisGeoProcessor = null;
-            IGeoProcessorResult GeoResult = null;
             IFeatureClass ResultsFC = null;
-            NPSGlobal NPS;
             string FCName;
-
-            NPS = NPSGlobal.Instance;
 
 
             try
@@ -3466,7 +3447,7 @@ namespace NPSTransectTool
                 GPParams.Add("FLAT");
                 GPParams.Add("NONE");
 
-                GeoResult = ThisGeoProcessor.Execute("Buffer_analysis", GPParams, null);
+                ThisGeoProcessor.Execute("Buffer_analysis", GPParams, null);
 
 
                 FCName = OutFCPathAndName.Substring(OutFCPathAndName.LastIndexOf("\\") + 1);
@@ -3497,12 +3478,8 @@ namespace NPSTransectTool
         {
             IVariantArray GPParams;
             IGeoProcessor ThisGeoProcessor = null;
-            IGeoProcessorResult GeoResult = null;
             IFeatureClass ResultsFC = null;
-            NPSGlobal NPS;
             string FCName, FCList;
-
-            NPS = NPSGlobal.Instance;
 
 
             try
@@ -3519,7 +3496,7 @@ namespace NPSTransectTool
                 GPParams.Add(OutFCPathAndName);
                 GPParams.Add("ALL");
 
-                GeoResult = ThisGeoProcessor.Execute("Union_analysis", GPParams, null);
+                ThisGeoProcessor.Execute("Union_analysis", GPParams, null);
 
 
                 FCName = OutFCPathAndName.Substring(OutFCPathAndName.LastIndexOf("\\") + 1);
@@ -3545,11 +3522,6 @@ namespace NPSTransectTool
         {
             IVariantArray GPParams;
             IGeoProcessor ThisGeoProcessor = null;
-            IGeoProcessorResult GeoResult = null;
-            NPSGlobal NPS;
-
-
-            NPS = NPSGlobal.Instance;
 
 
             try
@@ -3561,7 +3533,7 @@ namespace NPSTransectTool
                     GPParams.Add(ThisParam);
 
 
-                GeoResult = ThisGeoProcessor.Execute(GPToolName, GPParams, null);
+                ThisGeoProcessor.Execute(GPToolName, GPParams, null);
             }
             catch
             {
@@ -3578,11 +3550,7 @@ namespace NPSTransectTool
         {
             IVariantArray GPParams;
             IGeoProcessor ThisGeoProcessor = null;
-            IGeoProcessorResult GeoResult = null;
             IFeatureLayer TempLayer = null;
-            NPSGlobal NPS;
-
-            NPS = NPSGlobal.Instance;
 
 
             try
@@ -3598,7 +3566,7 @@ namespace NPSTransectTool
                 GPParams.Add(TempLayer);
                 GPParams.Add(ShapeFileFolderPath);
                 ThisGeoProcessor.OverwriteOutput = true;
-                GeoResult = ThisGeoProcessor.Execute("FeatureclassToShapefile_conversion", GPParams, null);
+                ThisGeoProcessor.Execute("FeatureclassToShapefile_conversion", GPParams, null);
             }
             catch (Exception ex)
             {
@@ -3681,7 +3649,7 @@ namespace NPSTransectTool
             files = Directory.GetFiles(SourceFolder);
             foreach (string file in files)
             {
-                string name = Path.GetFileName(file);
+                string name = Path.GetFileName(file) ?? "";
                 string dest = Path.Combine(DestinationFolder, name);
                 CopyFile(file, dest, ref LocalError);
             }
@@ -3690,7 +3658,7 @@ namespace NPSTransectTool
             foreach (string folder in folders)
             {
                 if (Path.GetFileName(folder) == ".svn") continue;
-                string name = Path.GetFileName(folder);
+                string name = Path.GetFileName(folder) ?? "";
                 string dest = Path.Combine(DestinationFolder, name);
                 CopyFolder(folder, dest, ref ErrorMessage);
             }
@@ -3720,7 +3688,6 @@ namespace NPSTransectTool
             string[] NPSFCNames;
             NPSGlobal NPS;
             IWorkspace ShapeFileWS;
-            IFeatureClass CurShapeFile;
             NPS = NPSGlobal.Instance;
 
             //get the survey folder path and validate it
@@ -3745,7 +3712,7 @@ namespace NPSTransectTool
             //make sure that each feature class is present in the survey folder
             foreach (string FCName in NPSFCNames)
             {
-                CurShapeFile = GetFeatureClass(FCName, ShapeFileWS, ref ErrorMessage);
+                GetFeatureClass(FCName, ShapeFileWS, ref ErrorMessage);
                 if (string.IsNullOrEmpty(ErrorMessage) == false)
                 {
                     ErrorMessage = "The survey folder is missing a Shapefile. " + ErrorMessage;
@@ -3970,19 +3937,10 @@ namespace NPSTransectTool
         /// <summary>
         ///     check if an object represents a numeric value
         /// </summary>
-        public static bool IsNumeric(object ThisValue)
+        public static bool IsNumeric(string ThisValue)
         {
-            double TryParse;
-
-            try
-            {
-                TryParse = Convert.ToDouble(ThisValue);
-                return true;
-            }
-            catch
-            {
-                return false;
-            }
+            double val;
+            return Double.TryParse(ThisValue, out val);
         }
 
         /// <summary>
@@ -4146,7 +4104,6 @@ namespace NPSTransectTool
         /// </summary>
         public static void ExportDefaultValuesTable(string ExportTablePath, ref string ErrorMessage)
         {
-            IGeoProcessorResult GeoResult = null;
             IGeoProcessor ThisGeoProcessor = null;
             IVariantArray GPParams;
             ITable DefaultValuesTable;
@@ -4167,7 +4124,7 @@ namespace NPSTransectTool
                 GPParams.Add(ShapeFileWorkspace);
                 GPParams.Add("defaultvalues.dbf");
 
-                GeoResult = ThisGeoProcessor.Execute("TableToTable_conversion", GPParams, null);
+                ThisGeoProcessor.Execute("TableToTable_conversion", GPParams, null);
             }
             catch (Exception ex)
             {
@@ -4636,7 +4593,7 @@ namespace NPSTransectTool
             Stream ThisStream;
             StreamReader ThisReader;
             StreamWriter ThisWriter;
-            string TestFile, TestString;
+            string TestFile;
 
             TestFile = Path.Combine(FolderPath, "test.txt");
 
@@ -4655,7 +4612,7 @@ namespace NPSTransectTool
                 //try reading
                 using (ThisReader = new StreamReader(TestFile))
                 {
-                    TestString = ThisReader.ReadLine();
+                    ThisReader.ReadLine();
                 }
 
                 //remove test file

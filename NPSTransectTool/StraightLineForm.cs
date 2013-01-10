@@ -1,10 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
 using System.Windows.Forms;
 using ESRI.ArcGIS.Geodatabase;
 using ESRI.ArcGIS.Geometry;
@@ -13,8 +7,8 @@ namespace NPSTransectTool
 {
     public partial class StraightLineForm : Form
     {
-        NPSGlobal m_NPS;
-        string m_ErrorMessage;
+        private readonly NPSGlobal m_NPS;
+        private string m_ErrorMessage;
 
         public StraightLineForm()
         {
@@ -31,11 +25,11 @@ namespace NPSTransectTool
             bool IsSelection = false;
 
             AnimalCursor = Util.GetLayerSelection(m_NPS.LYR_ANIMALS, true, true,
-                ref ResultsCount, ref IsSelection, ref DefExpress, ref m_ErrorMessage);
+                                                  ref ResultsCount, ref IsSelection, ref DefExpress, ref m_ErrorMessage);
 
             if (!string.IsNullOrEmpty(m_ErrorMessage))
             {
-                this.txtMessage.Text = m_ErrorMessage;
+                txtMessage.Text = m_ErrorMessage;
                 return;
             }
 
@@ -49,13 +43,12 @@ namespace NPSTransectTool
                 AnimalDisplayMessage += "All Sightings in the database will be processed.\r\n";
 
 
-
             HorizonCursor = Util.GetLayerSelection(m_NPS.LYR_HORIZON, true, true,
-                ref ResultsCount, ref IsSelection, ref DefExpress, ref ErrorMessage);
+                                                   ref ResultsCount, ref IsSelection, ref DefExpress, ref ErrorMessage);
 
             if (!string.IsNullOrEmpty(m_ErrorMessage))
             {
-                this.txtMessage.Text = m_ErrorMessage;
+                txtMessage.Text = m_ErrorMessage;
                 return;
             }
 
@@ -69,7 +62,7 @@ namespace NPSTransectTool
                 HorizonDisplayMessage += "All Horizons in the database will be processed.\r\n";
 
 
-            this.txtMessage.Text = AnimalDisplayMessage + "\r\n\r\n" + HorizonDisplayMessage;
+            txtMessage.Text = AnimalDisplayMessage + "\r\n\r\n" + HorizonDisplayMessage;
 
             AnimalCursor = null;
             HorizonCursor = null;
@@ -77,7 +70,7 @@ namespace NPSTransectTool
 
         private void btnClose_Click(object sender, EventArgs e)
         {
-            this.Close();
+            Close();
         }
 
         private void btnHelp_Click(object sender, EventArgs e)
@@ -100,12 +93,11 @@ namespace NPSTransectTool
             After deciding which sightings will be processed, click 'Run' to begin the 
             distance recalculation. ";
 
-            using (HelpMessageForm form = new HelpMessageForm())
+            using (var form = new HelpMessageForm())
             {
                 form.txtHelpMessage.Text = HelpText;
                 form.ShowDialog();
             }
-
         }
 
         private void btnRun_Click(object sender, EventArgs e)
@@ -122,10 +114,11 @@ namespace NPSTransectTool
             }
 
             AnimalCursor = Util.GetLayerSelection(m_NPS.LYR_ANIMALS, true, true,
-               ref SelectionCount, ref IsSelection, ref DefExpress, ref m_ErrorMessage);
+                                                  ref SelectionCount, ref IsSelection, ref DefExpress,
+                                                  ref m_ErrorMessage);
 
             HorizonCursor = Util.GetLayerSelection(m_NPS.LYR_HORIZON, true, true,
-               ref SelectionCount, ref IsSelection, ref DefExpress, ref ErrorMessage);
+                                                   ref SelectionCount, ref IsSelection, ref DefExpress, ref ErrorMessage);
 
             RecalDistance(AnimalCursor, ref AnimalUpdateCount, ref ErrorMessage);
             if (string.IsNullOrEmpty(ErrorMessage) == false)
@@ -145,7 +138,7 @@ namespace NPSTransectTool
             if (string.IsNullOrEmpty(ErrorMessage))
             {
                 MessageBox.Show("Update completed successfully!\r\n\r\nSightings updated: " + AnimalUpdateCount
-                    + "\r\nHorizons updated: " + HorizonUpdateCount);
+                                + "\r\nHorizons updated: " + HorizonUpdateCount);
             }
 
             AnimalCursor = null;
@@ -154,7 +147,6 @@ namespace NPSTransectTool
 
         private void RecalDistance(IFeatureCursor ThisCursor, ref int UpdateCount, ref string ErrorMessage)
         {
-
             IFeature ThisFeature, TransectFFeature;
             string TransectID, SurveyID;
             IFeatureClass TransLinesFC;
@@ -190,7 +182,6 @@ namespace NPSTransectTool
             {
                 TransectIDIndex = ThisFeature.Fields.FindField("TransectID");
                 if (TransectIDIndex < 0) ErrorMessage = "No transect id field found.";
-
             }
 
             //make sure we have the transect field
@@ -198,7 +189,6 @@ namespace NPSTransectTool
             {
                 SurveyIDIndex = ThisFeature.Fields.FindField("SurveyID");
                 if (SurveyIDIndex < 0) ErrorMessage = "No survey id field found.";
-
             }
 
             //make sure we have a distance field
@@ -219,13 +209,12 @@ namespace NPSTransectTool
             //loop through each feature, get it's transect segments and find the nearest one
             do
             {
-
                 //get transect id for feature
-                TransectID = (string)Util.SafeConvert(ThisFeature.get_Value(TransectIDIndex), typeof(string));
+                TransectID = (string) Util.SafeConvert(ThisFeature.get_Value(TransectIDIndex), typeof (string));
                 if (string.IsNullOrEmpty(TransectID)) continue;
 
                 //get survey id for feature
-                SurveyID = (string)Util.SafeConvert(ThisFeature.get_Value(SurveyIDIndex), typeof(string));
+                SurveyID = (string) Util.SafeConvert(ThisFeature.get_Value(SurveyIDIndex), typeof (string));
                 if (string.IsNullOrEmpty(SurveyID)) continue;
 
                 //get point shape
@@ -235,9 +224,8 @@ namespace NPSTransectTool
                 //get all segments on transect
                 qFilter = new QueryFilterClass();
                 qFilter.WhereClause = "TransectID=" + TransectID + " and SurveyID=" + SurveyID
-                    + " and SegType='OnTransect'";
+                                      + " and SegType='OnTransect'";
                 TransectFCursor = TransLinesFC.Search(qFilter, false);
-
 
 
                 ClosestDistance = 0;
@@ -246,21 +234,21 @@ namespace NPSTransectTool
                 //check the distance of all segments and get the one nearest to the feature
                 while ((TransectFFeature = TransectFCursor.NextFeature()) != null)
                 {
-
                     ThisCurve = TransectFFeature.ShapeCopy as ICurve;
 
-                    int segID = (int)Util.SafeConvert(TransectFFeature.get_Value(
-                        TransectFFeature.Fields.FindField("SegmentID")), typeof(int));
+                    var segID = (int) Util.SafeConvert(TransectFFeature.get_Value(
+                        TransectFFeature.Fields.FindField("SegmentID")), typeof (int));
 
                     //determine the distance between the two
                     if (ThisCurve != null && ThisPoint != null)
                     {
-                        ThisCurve.QueryPointAndDistance(esriSegmentExtension.esriNoExtension, ThisPoint, false, pOutPoint,
-                            ref DistanceAlongCurve, ref DistanceFromCurve, ref RightSide);
+                        ThisCurve.QueryPointAndDistance(esriSegmentExtension.esriNoExtension, ThisPoint, false,
+                                                        pOutPoint,
+                                                        ref DistanceAlongCurve, ref DistanceFromCurve, ref RightSide);
                     }
 
                     //if this is the first record then the first distance is the currently closest distance
-                    if (FirstRecord == true)
+                    if (FirstRecord)
                     {
                         ClosestDistance = DistanceFromCurve;
                         FirstRecord = false;
@@ -269,8 +257,6 @@ namespace NPSTransectTool
                     //if the current distance is less than the last distance, it now becomes the closest distance
                     if (DistanceFromCurve < ClosestDistance)
                         ClosestDistance = DistanceFromCurve;
-
-
                 }
 
                 //release transect cursor
@@ -279,7 +265,6 @@ namespace NPSTransectTool
                 //if first record is still true then there were no transects to check for distance so don't update
                 if (FirstRecord == false)
                 {
-
                     UpdateCount = UpdateCount + 1;
 
                     //update the feature with the closest distance
@@ -287,15 +272,8 @@ namespace NPSTransectTool
 
                     //save new distance value
                     ThisCursor.UpdateFeature(ThisFeature);
-
                 }
-
             } while ((ThisFeature = ThisCursor.NextFeature()) != null);
-
-
-
         }
-
-
     }
 }

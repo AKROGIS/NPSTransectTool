@@ -1,35 +1,45 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
-using ESRI.ArcGIS.Geodatabase;
+using System.Windows.Forms;
+using System.Xml.Linq;
 using ESRI.ArcGIS.Carto;
-using ESRI.ArcGIS.DataSourcesFile;
-using ESRI.ArcGIS.CatalogUI;
 using ESRI.ArcGIS.Catalog;
-using ESRI.ArcGIS.Geometry;
+using ESRI.ArcGIS.CatalogUI;
+using ESRI.ArcGIS.DataSourcesFile;
 using ESRI.ArcGIS.DataSourcesRaster;
+using ESRI.ArcGIS.GeoAnalyst;
+using ESRI.ArcGIS.Geodatabase;
+using ESRI.ArcGIS.Geometry;
+using ESRI.ArcGIS.Geoprocessing;
+using ESRI.ArcGIS.SpatialAnalyst;
+using ESRI.ArcGIS.esriSystem;
+using Microsoft.Win32;
+using Path = System.IO.Path;
 
 namespace NPSTransectTool
 {
-    static class Util
+    internal static class Util
     {
-
         /// <summary>
-        /// get the specified config value
+        ///     get the specified config value
         /// </summary>
         public static string GetConfigSetting(string OptionName)
         {
-            return Util.GetConfigSetting(OptionName, "NPSConfig");
+            return GetConfigSetting(OptionName, "NPSConfig");
         }
 
         /// <summary>
-        /// get the specified config value - specify parent element
+        ///     get the specified config value - specify parent element
         /// </summary>
         public static string GetConfigSetting(string OptionName, string ParentElement)
         {
             NPSGlobal ThisNPSGlobal;
-            System.Xml.Linq.XDocument XDoc;
+            XDocument XDoc;
 
             try
             {
@@ -38,11 +48,11 @@ namespace NPSTransectTool
                 XDoc = ThisNPSGlobal.XMLConfig;
                 if (XDoc == null) return "";
 
-                var results = from x in XDoc.Descendants(ParentElement)
-                              where x.Attribute("name").Value.ToLower() == OptionName.ToLower()
-                              select x;
+                IEnumerable<XElement> results = from x in XDoc.Descendants(ParentElement)
+                                                where x.Attribute("name").Value.ToLower() == OptionName.ToLower()
+                                                select x;
 
-                foreach (var x in results)
+                foreach (XElement x in results)
                 {
                     return x.Value;
                 }
@@ -55,20 +65,20 @@ namespace NPSTransectTool
         }
 
         /// <summary>
-        /// change a config value - will be saved to file when ArcMap closes
+        ///     change a config value - will be saved to file when ArcMap closes
         /// </summary>
         public static void SetConfigSetting(string OptionName, string OptionValue)
         {
-            Util.SetConfigSetting(OptionName, OptionValue, "NPSConfig");
+            SetConfigSetting(OptionName, OptionValue, "NPSConfig");
         }
 
         /// <summary>
-        /// change a config value - will be saved to file when ArcMap closes - specify parent element
+        ///     change a config value - will be saved to file when ArcMap closes - specify parent element
         /// </summary>
         public static void SetConfigSetting(string OptionName, string OptionValue, string ParentElement)
         {
             NPSGlobal ThisNPSGlobal;
-            System.Xml.Linq.XDocument XDoc;
+            XDocument XDoc;
 
             try
             {
@@ -77,15 +87,14 @@ namespace NPSTransectTool
                 XDoc = ThisNPSGlobal.XMLConfig;
                 if (XDoc == null) return;
 
-                var results = from x in XDoc.Descendants(ParentElement)
-                              where x.Attribute("name").Value.ToLower() == OptionName.ToLower()
-                              select x;
+                IEnumerable<XElement> results = from x in XDoc.Descendants(ParentElement)
+                                                where x.Attribute("name").Value.ToLower() == OptionName.ToLower()
+                                                select x;
 
-                foreach (var x in results)
+                foreach (XElement x in results)
                 {
                     x.Value = OptionValue;
                 }
-
             }
             catch
             {
@@ -93,12 +102,12 @@ namespace NPSTransectTool
         }
 
         /// <summary>
-        /// save in memory xml doc to file, occurs when ArcMap is closing or after certain operations
+        ///     save in memory xml doc to file, occurs when ArcMap is closing or after certain operations
         /// </summary>
         public static void SaveConfigSettings()
         {
             NPSGlobal ThisNPSGlobal;
-            System.Xml.Linq.XDocument XDoc;
+            XDocument XDoc;
 
             try
             {
@@ -115,12 +124,13 @@ namespace NPSTransectTool
         }
 
         /// <summary>
-        /// gets a cursor of all the selected features for a layer on the map that is bound to the specified
-        /// featureclass. 
+        ///     gets a cursor of all the selected features for a layer on the map that is bound to the specified
+        ///     featureclass.
         /// </summary>
         public static IFeatureCursor GetLayerSelection(string NPSFCName, bool IsUpdateCursor,
-            bool ReturnAllIfNoSelection, ref int ResultCount, ref bool IsSelection,
-            ref string DefExpress, ref string ErrorMessage)
+                                                       bool ReturnAllIfNoSelection, ref int ResultCount,
+                                                       ref bool IsSelection,
+                                                       ref string DefExpress, ref string ErrorMessage)
         {
             ILayer MapLayer = null;
             int SelectionCount = 0;
@@ -132,11 +142,11 @@ namespace NPSTransectTool
             IsSelection = false;
 
             //get the layer on the map for the specified featureclass
-            MapLayer = Util.GetLayerByFeatureClassName(NPSFCName);
+            MapLayer = GetLayerByFeatureClassName(NPSFCName);
             if (MapLayer == null)
             {
                 ErrorMessage = string.Format("No layers on the map from the NPS geodatabase have"
-                    + " a FeatureClass named {0} as their source", NPSFCName);
+                                             + " a FeatureClass named {0} as their source", NPSFCName);
                 return null;
             }
 
@@ -162,25 +172,26 @@ namespace NPSTransectTool
                     TheSelection = (MapLayer as IFeatureLayer).FeatureClass.Search(ThisQFilter, false) as ICursor;
 
                 ResultCount = (MapLayer as IFeatureLayer).FeatureClass.FeatureCount(ThisQFilter);
-
             }
-            //if there is a selection get only the selection (filtered by whereclause if a defex was set)
+                //if there is a selection get only the selection (filtered by whereclause if a defex was set)
             else
             {
                 ResultCount = SelectionCount;
                 IsSelection = true;
 
                 if (IsUpdateCursor)
-                    (((MapLayer as IFeatureSelection).SelectionSet) as ISelectionSet2).Update(ThisQFilter, false, out TheSelection);
+                    (((MapLayer as IFeatureSelection).SelectionSet) as ISelectionSet2).Update(ThisQFilter, false,
+                                                                                              out TheSelection);
                 else
-                    (((MapLayer as IFeatureSelection).SelectionSet) as ISelectionSet2).Search(ThisQFilter, false, out TheSelection);
+                    (((MapLayer as IFeatureSelection).SelectionSet) as ISelectionSet2).Search(ThisQFilter, false,
+                                                                                              out TheSelection);
             }
 
             return TheSelection as IFeatureCursor;
         }
 
         /// <summary>
-        /// get selection of a NPS Layer
+        ///     get selection of a NPS Layer
         /// </summary>
         public static ISelectionSet2 GetLayerSelection(string NPSFCName, ref string ErrorMessage)
         {
@@ -192,11 +203,11 @@ namespace NPSTransectTool
 
 
             //get the layer on the map for the specified featureclass
-            MapLayer = Util.GetLayerByFeatureClassName(NPSFCName);
+            MapLayer = GetLayerByFeatureClassName(NPSFCName);
             if (MapLayer == null)
             {
                 ErrorMessage = string.Format("No layers on the map from the NPS geodatabase have"
-                    + " a FeatureClass named {0} as their source", NPSFCName);
+                                             + " a FeatureClass named {0} as their source", NPSFCName);
                 return null;
             }
 
@@ -208,14 +219,13 @@ namespace NPSTransectTool
             if (SelectionCount > 0) return (MapLayer as IFeatureSelection).SelectionSet as ISelectionSet2;
 
             return null;
-
         }
 
         /// <summary>
-        /// get the selection set from the first non NPS layer found in the map
+        ///     get the selection set from the first non NPS layer found in the map
         /// </summary>
         public static ISelectionSet2 GetFirstNoneNPSSelectionSet(ref esriGeometryType FType,
-            ref string ErrorMessage)
+                                                                 ref string ErrorMessage)
         {
             NPSGlobal NPS;
             IMap ThisMap;
@@ -231,7 +241,6 @@ namespace NPSTransectTool
             TotalLayers = ThisMap.LayerCount;
             for (int IndexLayer = 0; IndexLayer < TotalLayers; IndexLayer++)
             {
-
                 CurLayer = ThisMap.get_Layer(IndexLayer);
 
                 if (!(CurLayer is IFeatureLayer)) continue;
@@ -250,19 +259,16 @@ namespace NPSTransectTool
 
                 FType = (CurLayer as IFeatureLayer).FeatureClass.ShapeType;
                 return FSelection.SelectionSet as ISelectionSet2;
-
             }
 
             return null;
-
         }
 
         /// <summary>
-        /// get a layer that has the specifed FC as it's source and is part of the NPS workspace
+        ///     get a layer that has the specifed FC as it's source and is part of the NPS workspace
         /// </summary>
         public static ILayer GetLayerByFeatureClassName(string FCName)
         {
-
             IEnumLayer LayerList = null;
             ILayer ThisLayer = null, FoundLayer = null;
             IFeatureLayer ThisFLayer = null;
@@ -285,13 +291,13 @@ namespace NPSTransectTool
 
                 //check if the current layer is a featurelayer
                 if (!(ThisLayer is IFeatureLayer)) continue;
-                ThisFLayer = (IFeatureLayer)ThisLayer;
+                ThisFLayer = (IFeatureLayer) ThisLayer;
 
                 //make sure the fc is valid
                 if (ThisFLayer.FeatureClass == null) continue;
 
                 //if it is a featurelayer, then get the featureclass and workspace names
-                ThisDS = (IDataset)ThisFLayer.FeatureClass;
+                ThisDS = (IDataset) ThisFLayer.FeatureClass;
                 ThisFCName = ThisDS.Name;
                 CurrentFCWorkspaceName = ThisDS.Workspace.PathName;
 
@@ -310,7 +316,7 @@ namespace NPSTransectTool
         }
 
         /// <summary>
-        /// get a feature class from the specified workspace
+        ///     get a feature class from the specified workspace
         /// </summary>
         public static IFeatureClass GetFeatureClass(String FCName, IWorkspace ThisWorkspace, ref string ErrorMessage)
         {
@@ -326,9 +332,8 @@ namespace NPSTransectTool
                 }
 
 
-                ThisFtrWS = (IFeatureWorkspace)ThisWorkspace;
+                ThisFtrWS = (IFeatureWorkspace) ThisWorkspace;
                 ThisFC = ThisFtrWS.OpenFeatureClass(FCName);
-
             }
             catch (Exception ex)
             {
@@ -337,19 +342,18 @@ namespace NPSTransectTool
             }
 
             return ThisFC;
-
         }
 
         /// <summary>
-        /// get a feature class from the nps workspace
+        ///     get a feature class from the nps workspace
         /// </summary>
         public static IFeatureClass GetFeatureClass(string FCName, ref string ErrorMessage)
         {
-            return Util.GetFeatureClass(FCName, NPSGlobal.Instance.Workspace, ref ErrorMessage);
+            return GetFeatureClass(FCName, NPSGlobal.Instance.Workspace, ref ErrorMessage);
         }
 
         /// <summary>
-        /// get a table from the specified workspace
+        ///     get a table from the specified workspace
         /// </summary>
         public static ITable GetTable(string TableName, IWorkspace ThisWorkspace, ref string ErrorMessage)
         {
@@ -358,10 +362,9 @@ namespace NPSTransectTool
 
             try
             {
-
                 if (ThisWorkspace != null && (ThisWorkspace is IFeatureWorkspace))
                 {
-                    ThisFtrWS = (IFeatureWorkspace)ThisWorkspace;
+                    ThisFtrWS = (IFeatureWorkspace) ThisWorkspace;
                     ThisTable = ThisFtrWS.OpenTable(TableName);
                 }
             }
@@ -372,14 +375,16 @@ namespace NPSTransectTool
             }
 
             return ThisTable;
-
         }
+
         public static ITable GetTable(string TableName, string WorkspacePath, ref string ErrorMessage)
         {
             IWorkspace ThisWorkspace = null;
-            return Util.GetTable(TableName, WorkspacePath, ref ThisWorkspace, ref ErrorMessage);
+            return GetTable(TableName, WorkspacePath, ref ThisWorkspace, ref ErrorMessage);
         }
-        public static ITable GetTable(string TableName, string WorkspacePath, ref IWorkspace ThisWorkspace, ref string ErrorMessage)
+
+        public static ITable GetTable(string TableName, string WorkspacePath, ref IWorkspace ThisWorkspace,
+                                      ref string ErrorMessage)
         {
             ITable ThisTable = null;
             IFeatureWorkspace ThisFtrWS = null;
@@ -387,32 +392,32 @@ namespace NPSTransectTool
 
             try
             {
-                ThisWorkspace = Util.OpenShapeFileWorkspace(WorkspacePath, ref ErrorMessage);
+                ThisWorkspace = OpenShapeFileWorkspace(WorkspacePath, ref ErrorMessage);
                 if (string.IsNullOrEmpty(ErrorMessage) == false) return null;
 
                 if (ThisWorkspace != null && (ThisWorkspace is IFeatureWorkspace))
                 {
-                    ThisFtrWS = (IFeatureWorkspace)ThisWorkspace;
+                    ThisFtrWS = (IFeatureWorkspace) ThisWorkspace;
                     ThisTable = ThisFtrWS.OpenTable(TableName);
                 }
             }
             catch (Exception ex)
             {
                 ErrorMessage = "Error occured while getting table " + TableName
-                    + " from workspace " + WorkspacePath + ". " + ex.Message;
+                               + " from workspace " + WorkspacePath + ". " + ex.Message;
                 return null;
             }
 
             return ThisTable;
-
         }
+
         public static ITable GetTable(string TableName, ref string ErrorMessage)
         {
             return GetTable(TableName, NPSGlobal.Instance.Workspace, ref ErrorMessage);
         }
 
         /// <summary>
-        /// open a file workspace
+        ///     open a file workspace
         /// </summary>
         public static IWorkspace OpenShapeFileWorkspace(string WorkspaceFolderPath, ref string ErrorMessage)
         {
@@ -427,13 +432,13 @@ namespace NPSTransectTool
             catch (Exception ex)
             {
                 ErrorMessage = "Error occured while opening ShapeFile workspace "
-                    + WorkspaceFolderPath + ". Make sure this is a path to a ShapeFile.\r\n\r\n" + ex.Message;
+                               + WorkspaceFolderPath + ". Make sure this is a path to a ShapeFile.\r\n\r\n" + ex.Message;
                 return null;
             }
         }
 
         /// <summary>
-        /// get a shapefile from a specified path and file name
+        ///     get a shapefile from a specified path and file name
         /// </summary>
         public static IFeatureClass GetShapeFile(string ShapeFilePathAndName, ref string ErrorMessage)
         {
@@ -442,8 +447,8 @@ namespace NPSTransectTool
 
             try
             {
-                FileName = System.IO.Path.GetFileName(ShapeFilePathAndName);
-                FilePath = System.IO.Path.GetDirectoryName(ShapeFilePathAndName);
+                FileName = Path.GetFileName(ShapeFilePathAndName);
+                FilePath = Path.GetDirectoryName(ShapeFilePathAndName);
             }
             catch
             {
@@ -451,47 +456,56 @@ namespace NPSTransectTool
                 return null;
             }
 
-            SFWorkspace = Util.OpenShapeFileWorkspace(FilePath, ref ErrorMessage);
+            SFWorkspace = OpenShapeFileWorkspace(FilePath, ref ErrorMessage);
             if (string.IsNullOrEmpty(ErrorMessage) == false) return null;
 
-            return Util.GetFeatureClass(FileName, SFWorkspace, ref ErrorMessage);
+            return GetFeatureClass(FileName, SFWorkspace, ref ErrorMessage);
         }
 
         /// <summary>
-        /// convert between types with no fear of exceptions
+        ///     convert between types with no fear of exceptions
         /// </summary>
         public static object SafeConvert(object Value, Type ValueType)
         {
-            if (ValueType == typeof(double))
+            if (ValueType == typeof (double))
             {
                 try
                 {
                     return Convert.ToDouble(Value);
                 }
-                catch { return -1; }
+                catch
+                {
+                    return -1;
+                }
             }
-            if (ValueType == typeof(int))
+            if (ValueType == typeof (int))
             {
                 try
                 {
                     return Convert.ToInt32(Value);
                 }
-                catch { return -1; }
+                catch
+                {
+                    return -1;
+                }
             }
-            if (ValueType == typeof(string))
+            if (ValueType == typeof (string))
             {
                 try
                 {
                     return Convert.ToString(Value);
                 }
-                catch { return ""; }
+                catch
+                {
+                    return "";
+                }
             }
 
             return null;
         }
 
         /// <summary>
-        /// return next available survey id
+        ///     return next available survey id
         /// </summary>
         public static int NextSurveyID(ref string ErrorMessage)
         {
@@ -504,8 +518,8 @@ namespace NPSTransectTool
 
             NPS = NPSGlobal.Instance;
 
-            SurveyBoundaryFC = Util.GetFeatureClass(NPS.LYR_SURVEY_BOUNDARY,
-                NPS.Workspace, ref ErrorMessage);
+            SurveyBoundaryFC = GetFeatureClass(NPS.LYR_SURVEY_BOUNDARY,
+                                               NPS.Workspace, ref ErrorMessage);
 
             if (string.IsNullOrEmpty(ErrorMessage) == false) return -1;
 
@@ -513,7 +527,7 @@ namespace NPSTransectTool
             if (SurveyIDIndex == -1)
             {
                 ErrorMessage = "Could not find the SurveyID field in the "
-                    + NPS.LYR_SURVEY_BOUNDARY + " FeatureClass";
+                               + NPS.LYR_SURVEY_BOUNDARY + " FeatureClass";
                 return -1;
             }
 
@@ -523,7 +537,7 @@ namespace NPSTransectTool
 
                 while ((ThisFeature = ThisFCursor.NextFeature()) != null)
                 {
-                    SurveyID = (int)Util.SafeConvert(ThisFeature.get_Value(SurveyIDIndex), typeof(int));
+                    SurveyID = (int) SafeConvert(ThisFeature.get_Value(SurveyIDIndex), typeof (int));
 
                     if (SurveyID > HighestSurveyID)
                         HighestSurveyID = SurveyID;
@@ -534,7 +548,7 @@ namespace NPSTransectTool
             catch (Exception ex)
             {
                 ErrorMessage = "Error occured while attempting to obtain the next available Survey ID. "
-                    + ex.Message;
+                               + ex.Message;
             }
 
             if (HighestSurveyID < 0) HighestSurveyID = 999;
@@ -543,10 +557,10 @@ namespace NPSTransectTool
         }
 
         /// <summary>
-        /// get the highest numeric value in a field
+        ///     get the highest numeric value in a field
         /// </summary>
         public static int GetHighestFieldValue(string FCName, string NumericFieldName, string WhereClause,
-            ref string ErrorMessage)
+                                               ref string ErrorMessage)
         {
             NPSGlobal NPS;
             IFeatureClass EvalFC;
@@ -558,7 +572,7 @@ namespace NPSTransectTool
 
             NPS = NPSGlobal.Instance;
 
-            EvalFC = Util.GetFeatureClass(FCName, NPS.Workspace, ref ErrorMessage);
+            EvalFC = GetFeatureClass(FCName, NPS.Workspace, ref ErrorMessage);
 
             if (string.IsNullOrEmpty(ErrorMessage) == false) return -1;
 
@@ -566,7 +580,7 @@ namespace NPSTransectTool
             if (FieldIndex == -1)
             {
                 ErrorMessage = "Could not find the " + NumericFieldName + " field in the "
-                    + FCName + " FeatureClass";
+                               + FCName + " FeatureClass";
                 return -1;
             }
 
@@ -588,7 +602,7 @@ namespace NPSTransectTool
 
                 while ((ThisFeature = ThisFCursor.NextFeature()) != null)
                 {
-                    FieldValue = (int)Util.SafeConvert(ThisFeature.get_Value(FieldIndex), typeof(int));
+                    FieldValue = (int) SafeConvert(ThisFeature.get_Value(FieldIndex), typeof (int));
 
                     if (FieldValue > HighestFieldValue)
                         HighestFieldValue = FieldValue;
@@ -599,7 +613,7 @@ namespace NPSTransectTool
             catch (Exception ex)
             {
                 ErrorMessage = "Error occured while attempting to obtain the next available " + NumericFieldName + ". "
-                    + ex.Message;
+                               + ex.Message;
             }
 
             if (HighestFieldValue == -1) HighestFieldValue = 0;
@@ -608,14 +622,14 @@ namespace NPSTransectTool
         }
 
         /// <summary>
-        /// open a system dialog box to select files
+        ///     open a system dialog box to select files
         /// </summary>
         public static string OpenFileDialog(string StartPath)
         {
-            System.Windows.Forms.DialogResult Results;
-            System.Windows.Forms.OpenFileDialog ThisFileDialog;
+            DialogResult Results;
+            OpenFileDialog ThisFileDialog;
 
-            ThisFileDialog = new System.Windows.Forms.OpenFileDialog();
+            ThisFileDialog = new OpenFileDialog();
 
             if (string.IsNullOrEmpty(StartPath)) StartPath = "c:\\";
 
@@ -627,7 +641,7 @@ namespace NPSTransectTool
 
             Results = ThisFileDialog.ShowDialog();
 
-            if (Results == System.Windows.Forms.DialogResult.OK)
+            if (Results == DialogResult.OK)
             {
                 return ThisFileDialog.FileName;
             }
@@ -638,11 +652,10 @@ namespace NPSTransectTool
         }
 
         /// <summary>
-        /// open an ArcMap dialog box to select esri files
+        ///     open an ArcMap dialog box to select esri files
         /// </summary>
         public static string OpenESRIDialog(string OldPath, ref bool Cancelled)
         {
-
             IGxDialog pGXDialog = null;
             IEnumGxObject pEnumGxObject = null;
             IGxObject pGxObject = null;
@@ -680,21 +693,21 @@ namespace NPSTransectTool
         }
 
         /// <summary>
-        /// get a copy of the default spatial reference used in the NPS geodatabase
+        ///     get a copy of the default spatial reference used in the NPS geodatabase
         /// </summary>
         public static ISpatialReference GetDefaultSpatialReference()
         {
             NPSGlobal NPS;
             IEnumDataset DatasetList;
             IDataset ThisDataset;
-            ESRI.ArcGIS.esriSystem.IClone ThisClone = null;
+            IClone ThisClone = null;
 
             NPS = NPSGlobal.Instance;
             DatasetList = NPS.Workspace.get_Datasets(esriDatasetType.esriDTFeatureClass);
 
             while ((ThisDataset = DatasetList.Next()) != null)
             {
-                ThisClone = ((IGeoDataset)ThisDataset).SpatialReference as ESRI.ArcGIS.esriSystem.IClone;
+                ThisClone = ((IGeoDataset) ThisDataset).SpatialReference as IClone;
                 break;
             }
 
@@ -704,17 +717,17 @@ namespace NPSTransectTool
         }
 
         /// <summary>
-        /// determine if two spatial references are the same
+        ///     determine if two spatial references are the same
         /// </summary>
         public static bool CompareSpatialReference(ISpatialReference SpatRef1, ISpatialReference SpatRef2)
         {
             //clone comparism determines if two objects have the same property
-            return ((ESRI.ArcGIS.esriSystem.IClone)SpatRef1).IsEqual(
-                SpatRef2 as ESRI.ArcGIS.esriSystem.IClone);
+            return ((IClone) SpatRef1).IsEqual(
+                SpatRef2 as IClone);
         }
 
         /// <summary>
-        /// get survey ids and survey names
+        ///     get survey ids and survey names
         /// </summary>
         public static Dictionary<string, int> GetSurveysList()
         {
@@ -729,7 +742,7 @@ namespace NPSTransectTool
             NPS = NPSGlobal.Instance;
             Surveys = new Dictionary<string, int>();
 
-            BoundaryFC = Util.GetFeatureClass(NPS.LYR_SURVEY_BOUNDARY, NPS.Workspace, ref ErrorMessage);
+            BoundaryFC = GetFeatureClass(NPS.LYR_SURVEY_BOUNDARY, NPS.Workspace, ref ErrorMessage);
             if (string.IsNullOrEmpty(ErrorMessage) == false) return Surveys;
 
             SurveyIDIndex = BoundaryFC.FindField("SurveyID");
@@ -742,13 +755,15 @@ namespace NPSTransectTool
 
             while ((ThisFeature = ThisFCursor.NextFeature()) != null)
             {
-                SurveyID = SurveyIDIndex == -1 ? -1 :
-                     (int)Util.SafeConvert(ThisFeature.get_Value(SurveyIDIndex), typeof(int));
+                SurveyID = SurveyIDIndex == -1
+                               ? -1
+                               : (int) SafeConvert(ThisFeature.get_Value(SurveyIDIndex), typeof (int));
 
                 if (SurveyID == -1) continue;
 
-                SurveyName = SurveyNameIndex == -1 ? "" :
-                    (string)Util.SafeConvert(ThisFeature.get_Value(SurveyNameIndex), typeof(string));
+                SurveyName = SurveyNameIndex == -1
+                                 ? ""
+                                 : (string) SafeConvert(ThisFeature.get_Value(SurveyNameIndex), typeof (string));
 
                 if (string.IsNullOrEmpty(SurveyName.Trim())) SurveyName = Convert.ToString(SurveyID);
 
@@ -761,8 +776,8 @@ namespace NPSTransectTool
         }
 
         /// <summary>
-        /// get all the unique batch ids in the specified nps layer and survey. if no survey is
-        /// provided, get the unique batch ids for the whole nps layer
+        ///     get all the unique batch ids in the specified nps layer and survey. if no survey is
+        ///     provided, get the unique batch ids for the whole nps layer
         /// </summary>
         public static List<string> GetBatchIDs(string NPSFCName, string SurveyID, ref string ErrorMessage)
         {
@@ -775,23 +790,22 @@ namespace NPSTransectTool
             BatchIDs = new List<string>();
             WhereClause = string.IsNullOrEmpty(SurveyID) ? "" : "SurveyID=" + SurveyID;
 
-            ThisFeatureClass = Util.GetFeatureClass(NPSFCName, NPS.Workspace, ref ErrorMessage);
+            ThisFeatureClass = GetFeatureClass(NPSFCName, NPS.Workspace, ref ErrorMessage);
             if (string.IsNullOrEmpty(ErrorMessage) == false) return BatchIDs;
 
 
-            return Util.GetUniqueValues(ThisFeatureClass, "BATCH_ID", WhereClause, ref ErrorMessage);
-
+            return GetUniqueValues(ThisFeatureClass, "BATCH_ID", WhereClause, ref ErrorMessage);
         }
 
         /// <summary>
-        /// get the unique values from a specified field in a specified featureclass using the
-        /// specified filter
+        ///     get the unique values from a specified field in a specified featureclass using the
+        ///     specified filter
         /// </summary>
         public static List<string> GetUniqueValues(IFeatureClass ThisFC,
-            string FieldName, string WhereClause, ref string ErrorMessage)
+                                                   string FieldName, string WhereClause, ref string ErrorMessage)
         {
             IDataStatistics ThisDataStatistics;
-            System.Collections.IEnumerator ValueList;
+            IEnumerator ValueList;
             IFeatureCursor ThisFCursor;
             IQueryFilter ThisQueryFilter;
             List<string> UniqueValues;
@@ -814,7 +828,7 @@ namespace NPSTransectTool
 
                 while (ValueList.MoveNext())
                 {
-                    CurrentValue = (string)Util.SafeConvert(ValueList.Current, typeof(string));
+                    CurrentValue = (string) SafeConvert(ValueList.Current, typeof (string));
                     if (string.IsNullOrEmpty(CurrentValue)) continue;
 
                     UniqueValues.Add(CurrentValue);
@@ -829,14 +843,14 @@ namespace NPSTransectTool
         }
 
         /// <summary>
-        /// load/save all controls with their saved values. controls are mapped to saved values via 
-        /// their tag property. the tag property contains the name of the saved option they are bounded to.
+        ///     load/save all controls with their saved values. controls are mapped to saved values via
+        ///     their tag property. the tag property contains the name of the saved option they are bounded to.
         /// </summary>
-        public static void ManageSavedValues(System.Windows.Forms.Control ParentControl,
-            SavedValuesAction Action)
+        public static void ManageSavedValues(Control ParentControl,
+                                             SavedValuesAction Action)
         {
             int TotalControls;
-            System.Windows.Forms.Control ThisControl;
+            Control ThisControl;
             string SavedValue, OptionName;
 
             TotalControls = ParentControl.Controls.Count;
@@ -844,54 +858,53 @@ namespace NPSTransectTool
             {
                 ThisControl = ParentControl.Controls[Index];
                 SavedValue = "";
-                OptionName = (string)Util.SafeConvert(ThisControl.Tag, typeof(string));
+                OptionName = (string) SafeConvert(ThisControl.Tag, typeof (string));
 
                 if (string.IsNullOrEmpty(OptionName) == false)
                 {
                     if (Action == SavedValuesAction.Load)
                     {
-                        SavedValue = Util.GetConfigSetting(OptionName, "StoredOption");
+                        SavedValue = GetConfigSetting(OptionName, "StoredOption");
 
-                        if (ThisControl is System.Windows.Forms.TextBox)
-                            (ThisControl as System.Windows.Forms.TextBox).Text = SavedValue;
+                        if (ThisControl is TextBox)
+                            (ThisControl as TextBox).Text = SavedValue;
 
-                        if (ThisControl is System.Windows.Forms.CheckBox)
-                            (ThisControl as System.Windows.Forms.CheckBox).Checked = SavedValue == "Y" ? true : false;
+                        if (ThisControl is CheckBox)
+                            (ThisControl as CheckBox).Checked = SavedValue == "Y" ? true : false;
 
-                        if (ThisControl is System.Windows.Forms.ComboBox)
-                            (ThisControl as System.Windows.Forms.ComboBox).Text = SavedValue;
+                        if (ThisControl is ComboBox)
+                            (ThisControl as ComboBox).Text = SavedValue;
 
-                        if (ThisControl is System.Windows.Forms.Label)
-                            (ThisControl as System.Windows.Forms.Label).Text = SavedValue;
+                        if (ThisControl is Label)
+                            (ThisControl as Label).Text = SavedValue;
                     }
 
                     if (Action == SavedValuesAction.Save)
                     {
-                        if (ThisControl is System.Windows.Forms.TextBox)
-                            SavedValue = (ThisControl as System.Windows.Forms.TextBox).Text;
+                        if (ThisControl is TextBox)
+                            SavedValue = (ThisControl as TextBox).Text;
 
-                        if (ThisControl is System.Windows.Forms.CheckBox)
-                            SavedValue = (ThisControl as System.Windows.Forms.CheckBox).Checked ? "Y" : "N";
+                        if (ThisControl is CheckBox)
+                            SavedValue = (ThisControl as CheckBox).Checked ? "Y" : "N";
 
-                        if (ThisControl is System.Windows.Forms.ComboBox)
-                            SavedValue = (ThisControl as System.Windows.Forms.ComboBox).Text;
+                        if (ThisControl is ComboBox)
+                            SavedValue = (ThisControl as ComboBox).Text;
 
-                        if (ThisControl is System.Windows.Forms.Label)
-                            SavedValue = (ThisControl as System.Windows.Forms.Label).Text;
+                        if (ThisControl is Label)
+                            SavedValue = (ThisControl as Label).Text;
 
-                        Util.SetConfigSetting(OptionName, SavedValue, "StoredOption");
+                        SetConfigSetting(OptionName, SavedValue, "StoredOption");
                     }
                 }
 
 
                 if (ThisControl.Controls.Count > 0)
-                    Util.ManageSavedValues(ThisControl, Action);
-
+                    ManageSavedValues(ThisControl, Action);
             }
         }
 
         /// <summary>
-        /// get a raster dataset from the specified folder and file name
+        ///     get a raster dataset from the specified folder and file name
         /// </summary>
         public static IRasterDataset OpenRasterDataset(string RasterPathAndName, ref string ErrorMessage)
         {
@@ -900,8 +913,8 @@ namespace NPSTransectTool
 
             try
             {
-                FileName = System.IO.Path.GetFileName(RasterPathAndName);
-                FilePath = System.IO.Path.GetDirectoryName(RasterPathAndName);
+                FileName = Path.GetFileName(RasterPathAndName);
+                FilePath = Path.GetDirectoryName(RasterPathAndName);
             }
             catch
             {
@@ -910,25 +923,24 @@ namespace NPSTransectTool
             }
 
 
-            ThisWorkspace = Util.OpenRasterWorkspace(FilePath, ref ErrorMessage);
+            ThisWorkspace = OpenRasterWorkspace(FilePath, ref ErrorMessage);
             if (string.IsNullOrEmpty(ErrorMessage) == false) return null;
 
             try
             {
-                return ((IRasterWorkspace)ThisWorkspace).OpenRasterDataset(FileName);
+                return ((IRasterWorkspace) ThisWorkspace).OpenRasterDataset(FileName);
             }
             catch (Exception ex)
             {
                 ErrorMessage = "Error while getting raster at path "
-                    + RasterPathAndName + ". " + ex.Message;
+                               + RasterPathAndName + ". " + ex.Message;
             }
 
             return null;
-
         }
 
         /// <summary>
-        /// open a raster workspace at the specified folder path
+        ///     open a raster workspace at the specified folder path
         /// </summary>
         public static IWorkspace OpenRasterWorkspace(string WorkspacePath, ref string ErrorMessage)
         {
@@ -942,14 +954,14 @@ namespace NPSTransectTool
             catch (Exception ex)
             {
                 ErrorMessage = "Error occured while opening raster workspace at "
-                    + WorkspacePath + ". " + ex.Message;
+                               + WorkspacePath + ". " + ex.Message;
             }
 
             return null;
         }
 
         /// <summary>
-        /// get she polygon shape representing a survey area
+        ///     get she polygon shape representing a survey area
         /// </summary>
         public static IPolygon GetSurveyBoundary(string SurveyID, ref string ErrorMessage)
         {
@@ -962,7 +974,7 @@ namespace NPSTransectTool
 
             NPS = NPSGlobal.Instance;
 
-            BoundaryFC = Util.GetFeatureClass(NPS.LYR_SURVEY_BOUNDARY, ref ErrorMessage);
+            BoundaryFC = GetFeatureClass(NPS.LYR_SURVEY_BOUNDARY, ref ErrorMessage);
             if (string.IsNullOrEmpty(ErrorMessage) == false) return null;
 
             try
@@ -985,36 +997,36 @@ namespace NPSTransectTool
         }
 
         /// <summary>
-        /// get a clip of a larger raster using the specified survey boundary as the cut out shape
+        ///     get a clip of a larger raster using the specified survey boundary as the cut out shape
         /// </summary>
         public static IGeoDataset ClipRasterByBndPoly(IGeoDataset RasterToClip, string SurveyID, ref string ErrorMessage)
         {
             IPolygon SurveyBoundary, SurveyEnvelopePoly, DEMEnvelopePoly;
-            ESRI.ArcGIS.SpatialAnalyst.IExtractionOp ExtractOp;
+            IExtractionOp ExtractOp;
             IGeoDataset ClippedRaster = null;
 
-            SurveyBoundary = Util.GetSurveyBoundary(SurveyID, ref ErrorMessage);
+            SurveyBoundary = GetSurveyBoundary(SurveyID, ref ErrorMessage);
             if (string.IsNullOrEmpty(ErrorMessage) == false) return null;
 
-            SurveyEnvelopePoly = Util.EnvelopeToPolygon(SurveyBoundary.Envelope);
-            DEMEnvelopePoly = Util.EnvelopeToPolygon(RasterToClip.Extent);
+            SurveyEnvelopePoly = EnvelopeToPolygon(SurveyBoundary.Envelope);
+            DEMEnvelopePoly = EnvelopeToPolygon(RasterToClip.Extent);
 
-            if (((IRelationalOperator)DEMEnvelopePoly).Contains(SurveyEnvelopePoly) == false)
+            if (((IRelationalOperator) DEMEnvelopePoly).Contains(SurveyEnvelopePoly) == false)
             {
                 ErrorMessage = "The boundary polygon for SurveyID " + SurveyID
-                    + " is out of range of the Raster extent.";
+                               + " is out of range of the Raster extent.";
                 return null;
             }
 
             try
             {
-                ExtractOp = new ESRI.ArcGIS.SpatialAnalyst.RasterExtractionOpClass();
+                ExtractOp = new RasterExtractionOpClass();
                 ClippedRaster = ExtractOp.Polygon(RasterToClip, SurveyEnvelopePoly, true);
             }
             catch (Exception ex)
             {
                 ErrorMessage = "Error occured while clipping raster to boundary of survey "
-                    + SurveyID + ". " + ex.Message;
+                               + SurveyID + ". " + ex.Message;
             }
 
 
@@ -1022,27 +1034,27 @@ namespace NPSTransectTool
         }
 
         /// <summary>
-        /// convert an evelope to a polygon
+        ///     convert an evelope to a polygon
         /// </summary>
         public static IPolygon EnvelopeToPolygon(IEnvelope ThisEnvelope)
         {
             IPolygon EnvelopePoly;
-            object emtpy = System.Reflection.Missing.Value;
+            object emtpy = Missing.Value;
             IPoint EnveCorner;
 
             EnvelopePoly = new PolygonClass();
 
-            EnveCorner = ((ESRI.ArcGIS.esriSystem.IClone)ThisEnvelope.Envelope.UpperLeft).Clone() as IPoint;
-            ((IPointCollection)EnvelopePoly).AddPoint(EnveCorner, ref emtpy, ref emtpy);
+            EnveCorner = ((IClone) ThisEnvelope.Envelope.UpperLeft).Clone() as IPoint;
+            ((IPointCollection) EnvelopePoly).AddPoint(EnveCorner, ref emtpy, ref emtpy);
 
-            EnveCorner = ((ESRI.ArcGIS.esriSystem.IClone)ThisEnvelope.Envelope.UpperRight).Clone() as IPoint;
-            ((IPointCollection)EnvelopePoly).AddPoint(EnveCorner, ref emtpy, ref emtpy);
+            EnveCorner = ((IClone) ThisEnvelope.Envelope.UpperRight).Clone() as IPoint;
+            ((IPointCollection) EnvelopePoly).AddPoint(EnveCorner, ref emtpy, ref emtpy);
 
-            EnveCorner = ((ESRI.ArcGIS.esriSystem.IClone)ThisEnvelope.Envelope.LowerRight).Clone() as IPoint;
-            ((IPointCollection)EnvelopePoly).AddPoint(EnveCorner, ref emtpy, ref emtpy);
+            EnveCorner = ((IClone) ThisEnvelope.Envelope.LowerRight).Clone() as IPoint;
+            ((IPointCollection) EnvelopePoly).AddPoint(EnveCorner, ref emtpy, ref emtpy);
 
-            EnveCorner = ((ESRI.ArcGIS.esriSystem.IClone)ThisEnvelope.Envelope.LowerLeft).Clone() as IPoint;
-            ((IPointCollection)EnvelopePoly).AddPoint(EnveCorner, ref emtpy, ref emtpy);
+            EnveCorner = ((IClone) ThisEnvelope.Envelope.LowerLeft).Clone() as IPoint;
+            ((IPointCollection) EnvelopePoly).AddPoint(EnveCorner, ref emtpy, ref emtpy);
 
             EnvelopePoly.Close();
 
@@ -1050,7 +1062,7 @@ namespace NPSTransectTool
         }
 
         /// <summary>
-        /// delete features from a nps featureclass with the specified filter
+        ///     delete features from a nps featureclass with the specified filter
         /// </summary>
         public static void DeleteFeatures(string NPSFCName, string WhereClause, ref string ErrorMessage)
         {
@@ -1060,7 +1072,7 @@ namespace NPSTransectTool
 
             NPS = NPSGlobal.Instance;
 
-            ThisTable = Util.GetFeatureClass(NPSFCName, ref ErrorMessage) as ITable;
+            ThisTable = GetFeatureClass(NPSFCName, ref ErrorMessage) as ITable;
             if (string.IsNullOrEmpty(ErrorMessage) == false) return;
 
             ThisQueryFilter = new QueryFilterClass();
@@ -1074,12 +1086,10 @@ namespace NPSTransectTool
             {
                 ErrorMessage = "Error occured while deleting feature in " + NPSFCName + ". " + ex.Message;
             }
-
-
         }
 
         /// <summary>
-        /// delete feature through cursor from specified featureclass
+        ///     delete feature through cursor from specified featureclass
         /// </summary>
         public static void DeleteFeatures(IFeatureClass ThisFeatureClass, string WhereClause, ref string ErrorMessage)
         {
@@ -1108,16 +1118,16 @@ namespace NPSTransectTool
             catch (Exception ex)
             {
                 ErrorMessage = "Error occured while deleting features in "
-                    + ((IDataset)ThisFeatureClass).Name + ". " + ex.Message;
+                               + ((IDataset) ThisFeatureClass).Name + ". " + ex.Message;
             }
         }
 
         /// <summary>
-        /// copy features from one feature class to the other. if feature classes have two fields with the same name and type
-        /// the data will be copied over
+        ///     copy features from one feature class to the other. if feature classes have two fields with the same name and type
+        ///     the data will be copied over
         /// </summary>
         public static int CopyFeatures(IFeatureClass FromFC, string FromWhereClause, IFeatureClass ToFC,
-            List<string> FieldsToUpdate, ref string ErrorMessage)
+                                       List<string> FieldsToUpdate, ref string ErrorMessage)
         {
             IQueryFilter ThisQueryFilter;
             IFeatureCursor ReadCursor;
@@ -1127,7 +1137,7 @@ namespace NPSTransectTool
             ThisQueryFilter.WhereClause = FromWhereClause;
             ReadCursor = FromFC.Search(ThisQueryFilter, false);
 
-            CopyCount = Util.CopyFeatures(ReadCursor, ToFC, FieldsToUpdate, ref ErrorMessage);
+            CopyCount = CopyFeatures(ReadCursor, ToFC, FieldsToUpdate, ref ErrorMessage);
 
             ReadCursor = null;
 
@@ -1135,10 +1145,10 @@ namespace NPSTransectTool
         }
 
         /// <summary>
-        /// copy features from a cursor to a featureclass. 
+        ///     copy features from a cursor to a featureclass.
         /// </summary>
         public static int CopyFeatures(IFeatureCursor FromFCursor, IFeatureClass ToFC,
-            List<string> FieldsToUpdate, ref string ErrorMessage)
+                                       List<string> FieldsToUpdate, ref string ErrorMessage)
         {
             IFeatureCursor InsertCursor;
             IFeature ReadFeature;
@@ -1160,7 +1170,6 @@ namespace NPSTransectTool
 
                 if (FieldsToUpdate == null)
                 {
-
                     ReadFieldCount = ReadFeature.Fields.FieldCount;
 
                     for (ReadFieldIndex = 0; ReadFieldIndex < ReadFieldCount; ReadFieldIndex++)
@@ -1177,7 +1186,8 @@ namespace NPSTransectTool
                             && ReadFeature.Fields.get_Field(ReadFieldIndex).Type != esriFieldType.esriFieldTypeOID
                             && ReadFeature.Fields.get_Field(ReadFieldIndex).Type != esriFieldType.esriFieldTypeGeometry)
                         {
-                            if (ReadFeature.Fields.get_Field(ReadFieldIndex).Type == ToFC.Fields.get_Field(InsertFieldIndex).Type)
+                            if (ReadFeature.Fields.get_Field(ReadFieldIndex).Type ==
+                                ToFC.Fields.get_Field(InsertFieldIndex).Type)
                                 InsertBuffer.set_Value(InsertFieldIndex, ReadFeature.get_Value(ReadFieldIndex));
                         }
                     }
@@ -1190,7 +1200,8 @@ namespace NPSTransectTool
                         InsertFieldIndex = ToFC.FindField(FieldName);
 
                         if (ReadFieldIndex != -1 && InsertFieldIndex != -1)
-                            if (ReadFeature.Fields.get_Field(ReadFieldIndex).Type == ToFC.Fields.get_Field(InsertFieldIndex).Type)
+                            if (ReadFeature.Fields.get_Field(ReadFieldIndex).Type ==
+                                ToFC.Fields.get_Field(InsertFieldIndex).Type)
                                 InsertBuffer.set_Value(InsertFieldIndex, ReadFeature.get_Value(ReadFieldIndex));
                     }
                 }
@@ -1206,10 +1217,10 @@ namespace NPSTransectTool
         }
 
         /// <summary>
-        /// update a single transect feature with the matching feature in the specified feature class
+        ///     update a single transect feature with the matching feature in the specified feature class
         /// </summary>
         public static void UpdateTransect(string TransectID, string SurveyID, IFeatureClass FromFC,
-            ref string ErrorMessage)
+                                          ref string ErrorMessage)
         {
             IQueryFilter ThisQueryFilter;
             IFeatureCursor TransectCursor, FromCursor;
@@ -1227,7 +1238,7 @@ namespace NPSTransectTool
 
 
             //get transect feature and cursor
-            TrasectFC = Util.GetFeatureClass(NPS.LYR_GENERATED_TRANSECTS, ref ErrorMessage);
+            TrasectFC = GetFeatureClass(NPS.LYR_GENERATED_TRANSECTS, ref ErrorMessage);
             ThisQueryFilter = new QueryFilterClass();
             ThisQueryFilter.WhereClause = FromWhereClause;
             TransectCursor = TrasectFC.Update(ThisQueryFilter, false);
@@ -1251,9 +1262,21 @@ namespace NPSTransectTool
                 return;
             }
 
-            FieldsToUpdate = new List<string> { "PILOTLNAM", "OBSLNAM1", "OBSLNAM2",
-                "FLOWNDATE", "WEATHER", "FLOWN", "TURBDUR","TURBINT","PRECIP","CLOUDCOVER",
-                "TEMPRTURE","AIRCRAFT"};
+            FieldsToUpdate = new List<string>
+                {
+                    "PILOTLNAM",
+                    "OBSLNAM1",
+                    "OBSLNAM2",
+                    "FLOWNDATE",
+                    "WEATHER",
+                    "FLOWN",
+                    "TURBDUR",
+                    "TURBINT",
+                    "PRECIP",
+                    "CLOUDCOVER",
+                    "TEMPRTURE",
+                    "AIRCRAFT"
+                };
 
             foreach (string FieldName in FieldsToUpdate)
             {
@@ -1261,7 +1284,8 @@ namespace NPSTransectTool
                 InsertFieldIndex = TrasectFC.FindField(FieldName);
 
                 if (ReadFieldIndex != -1 && InsertFieldIndex != -1)
-                    if (FromFC.Fields.get_Field(ReadFieldIndex).Type == TrasectFC.Fields.get_Field(InsertFieldIndex).Type)
+                    if (FromFC.Fields.get_Field(ReadFieldIndex).Type ==
+                        TrasectFC.Fields.get_Field(InsertFieldIndex).Type)
                         TransectFeature.set_Value(InsertFieldIndex, FromFeature.get_Value(ReadFieldIndex));
             }
 
@@ -1272,7 +1296,7 @@ namespace NPSTransectTool
         }
 
         /// <summary>
-        /// delete a layer form the map
+        ///     delete a layer form the map
         /// </summary>
         public static bool DeleteLayerFromMap(string LayerName)
         {
@@ -1281,7 +1305,6 @@ namespace NPSTransectTool
             int LayerTotal;
             IFeatureLayer ThisFLayer;
             bool Deleted = false;
-
 
 
             NPS = NPSGlobal.Instance;
@@ -1305,18 +1328,18 @@ namespace NPSTransectTool
         }
 
         /// <summary>
-        /// delete a featureclass that is within the NPS geodatabase
+        ///     delete a featureclass that is within the NPS geodatabase
         /// </summary>
         public static void DeleteDataset(string FCName, esriDatasetType DatasetType, ref string ErrorMessage)
         {
-            Util.DeleteDataset(FCName, DatasetType, NPSGlobal.Instance.Workspace, ref ErrorMessage);
+            DeleteDataset(FCName, DatasetType, NPSGlobal.Instance.Workspace, ref ErrorMessage);
         }
 
         /// <summary>
-        /// delete a featureclass that is within the specified workspace
+        ///     delete a featureclass that is within the specified workspace
         /// </summary>
         public static void DeleteDataset(string DSName, esriDatasetType DatasetType,
-            IWorkspace ThisWorkspace, ref string ErrorMessage)
+                                         IWorkspace ThisWorkspace, ref string ErrorMessage)
         {
             string InternalMessage = "";
             IDataset ThisDataset = null;
@@ -1326,12 +1349,11 @@ namespace NPSTransectTool
                 switch (DatasetType)
                 {
                     case esriDatasetType.esriDTFeatureClass:
-                        ThisDataset = Util.GetFeatureClass(DSName, ThisWorkspace, ref InternalMessage) as IDataset;
+                        ThisDataset = GetFeatureClass(DSName, ThisWorkspace, ref InternalMessage) as IDataset;
                         break;
                     case esriDatasetType.esriDTTable:
-                        ThisDataset = Util.GetTable(DSName, ThisWorkspace, ref InternalMessage) as IDataset;
+                        ThisDataset = GetTable(DSName, ThisWorkspace, ref InternalMessage) as IDataset;
                         break;
-
                 }
 
                 if (string.IsNullOrEmpty(InternalMessage) == false) return;
@@ -1342,24 +1364,23 @@ namespace NPSTransectTool
             {
                 ErrorMessage = "Error occured while deleting dataset " + DSName + ". " + ex.Message;
             }
-
         }
 
         /// <summary>
-        /// generate exlcuded area polygons for the specified survey and elevation
+        ///     generate exlcuded area polygons for the specified survey and elevation
         /// </summary>
         public static void GenerateExcludedAreasPolygons(int SurveyID, int MaximumElevInFeet, bool IsAboveElevation,
-            IGeoDataset ClippedRasterDS, ref string ErrorMessage)
+                                                         IGeoDataset ClippedRasterDS, ref string ErrorMessage)
         {
-            ESRI.ArcGIS.SpatialAnalyst.IMathOp ThisMathOp;
+            IMathOp ThisMathOp;
             IGeoDataset IntRasterDS = null;
             IQueryFilter ThisQueryFilter;
-            ESRI.ArcGIS.GeoAnalyst.IRasterDescriptor ThisRasterDescriptor;
-            ESRI.ArcGIS.Geoprocessing.IGeoProcessorResult GeoResult = null;
-            ESRI.ArcGIS.Geoprocessing.IGeoProcessor ThisGeoProcessor = null;
-            ESRI.ArcGIS.esriSystem.IVariantArray GPParams;
+            IRasterDescriptor ThisRasterDescriptor;
+            IGeoProcessorResult GeoResult = null;
+            IGeoProcessor ThisGeoProcessor = null;
+            IVariantArray GPParams;
             IFeatureClass NewElvPolyFC, BoundaryFC, ElvPolyFC;
-            ESRI.ArcGIS.GeoAnalyst.IConversionOp ThisConversionOp;
+            IConversionOp ThisConversionOp;
             string TempElvFCName, TempAggFCName, InternalErrors = "", TempClipFCName;
             IFeatureBuffer InsertBuffer;
             IFeatureCursor InsertCursor, TempCursor;
@@ -1375,10 +1396,10 @@ namespace NPSTransectTool
             TempClipFCName = "NPS_TEMP_TempClipFCName";
 
 
-            ElvPolyFC = Util.GetFeatureClass(NPS.LYR_EXCLUDED_AREAS, ref ErrorMessage);
+            ElvPolyFC = GetFeatureClass(NPS.LYR_EXCLUDED_AREAS, ref ErrorMessage);
             if (string.IsNullOrEmpty(ErrorMessage) == false) return;
 
-            BoundaryFC = Util.GetFeatureClass(NPS.LYR_SURVEY_BOUNDARY, ref ErrorMessage);
+            BoundaryFC = GetFeatureClass(NPS.LYR_SURVEY_BOUNDARY, ref ErrorMessage);
             if (string.IsNullOrEmpty(ErrorMessage) == false) return;
 
             SurveyIDIndex = ElvPolyFC.FindField("SurveyID");
@@ -1388,33 +1409,32 @@ namespace NPSTransectTool
                 return;
             }
 
-            Util.SetProgressMessage("Deleting old temp files");
-            Util.DeleteDataset(TempElvFCName, esriDatasetType.esriDTFeatureClass, ref InternalErrors);
-            Util.DeleteDataset(TempClipFCName, esriDatasetType.esriDTFeatureClass, ref InternalErrors);
-            Util.DeleteDataset(TempAggFCName, esriDatasetType.esriDTFeatureClass, ref InternalErrors);
-            Util.DeleteDataset(TempClipFCName + "_Tbl", esriDatasetType.esriDTTable, ref InternalErrors);
-            Util.DeleteDataset(TempAggFCName + "_Tbl", esriDatasetType.esriDTTable, ref InternalErrors);
-
+            SetProgressMessage("Deleting old temp files");
+            DeleteDataset(TempElvFCName, esriDatasetType.esriDTFeatureClass, ref InternalErrors);
+            DeleteDataset(TempClipFCName, esriDatasetType.esriDTFeatureClass, ref InternalErrors);
+            DeleteDataset(TempAggFCName, esriDatasetType.esriDTFeatureClass, ref InternalErrors);
+            DeleteDataset(TempClipFCName + "_Tbl", esriDatasetType.esriDTTable, ref InternalErrors);
+            DeleteDataset(TempAggFCName + "_Tbl", esriDatasetType.esriDTTable, ref InternalErrors);
 
 
             try
             {
-                Util.SetProgressMessage("Converting DEM values to integers");
+                SetProgressMessage("Converting DEM values to integers");
 
-                ThisMathOp = new ESRI.ArcGIS.SpatialAnalyst.RasterMathOpsClass();
+                ThisMathOp = new RasterMathOpsClass();
                 IntRasterDS = ThisMathOp.Int(ClippedRasterDS);
             }
             catch (Exception ex)
             {
-                ErrorMessage = "Error occured while converting DEM float slope values to slope integer values. " + ex.Message;
+                ErrorMessage = "Error occured while converting DEM float slope values to slope integer values. " +
+                               ex.Message;
                 return;
             }
 
 
-
             try
             {
-                Util.SetProgressMessage("Building excluded area polygons from DEM");
+                SetProgressMessage("Building excluded area polygons from DEM");
 
                 //determine which values to exclude
                 ThisQueryFilter = new QueryFilterClass();
@@ -1424,31 +1444,31 @@ namespace NPSTransectTool
                 else
                     ThisQueryFilter.WhereClause = " Value <= " + MaximumElevInFeet;
 
-                ThisRasterDescriptor = new ESRI.ArcGIS.GeoAnalyst.RasterDescriptorClass();
+                ThisRasterDescriptor = new RasterDescriptorClass();
                 ThisRasterDescriptor.Create(IntRasterDS as IRaster, ThisQueryFilter, "Value");
 
-                ThisConversionOp = new ESRI.ArcGIS.GeoAnalyst.RasterConversionOpClass();
+                ThisConversionOp = new RasterConversionOpClass();
                 NewElvPolyFC = ThisConversionOp.RasterDataToPolygonFeatureData(ThisRasterDescriptor as IGeoDataset,
-                    NPS.Workspace, TempElvFCName, true) as IFeatureClass;
+                                                                               NPS.Workspace, TempElvFCName, true) as
+                               IFeatureClass;
             }
             catch (Exception ex)
             {
                 ErrorMessage = "Error occured while generating a FeatureClass of flat "
-                + "areas from the default DEM file. " + ex.Message;
+                               + "areas from the default DEM file. " + ex.Message;
                 return;
             }
 
 
-
             try
             {
-                Util.SetProgressMessage("Aggregating excluded area polygons");
+                SetProgressMessage("Aggregating excluded area polygons");
 
-                ThisGeoProcessor = new ESRI.ArcGIS.Geoprocessing.GeoProcessor();
-                GPParams = new ESRI.ArcGIS.esriSystem.VarArrayClass();
+                ThisGeoProcessor = new GeoProcessor();
+                GPParams = new VarArrayClass();
 
-                GPParams.Add(System.IO.Path.Combine(NPS.DatabasePath, TempElvFCName));
-                GPParams.Add(System.IO.Path.Combine(NPS.DatabasePath, TempAggFCName));
+                GPParams.Add(Path.Combine(NPS.DatabasePath, TempElvFCName));
+                GPParams.Add(Path.Combine(NPS.DatabasePath, TempAggFCName));
                 GPParams.Add("1 Meters");
 
                 GeoResult = ThisGeoProcessor.Execute("AggregatePolygons_management", GPParams, null);
@@ -1456,26 +1476,27 @@ namespace NPSTransectTool
             catch (Exception ex)
             {
                 ErrorMessage = string.Format("Geoprocessor error:\r\nTask:AggregatePolygons_management\r\n"
-                    + "Params:{0},{1},{2}\r\nException:{3}", System.IO.Path.Combine(NPS.DatabasePath, TempElvFCName),
-                    System.IO.Path.Combine(NPS.DatabasePath, TempAggFCName), "1 Meters", ex.Message);
+                                             + "Params:{0},{1},{2}\r\nException:{3}",
+                                             Path.Combine(NPS.DatabasePath, TempElvFCName),
+                                             Path.Combine(NPS.DatabasePath, TempAggFCName), "1 Meters", ex.Message);
                 ThisGeoProcessor = null;
                 return;
             }
 
             ThisGeoProcessor = null;
 
-            Util.DeleteLayerFromMap(TempAggFCName);
+            DeleteLayerFromMap(TempAggFCName);
 
-            NewElvPolyFC = Util.GetFeatureClass(TempAggFCName, ref ErrorMessage);
+            NewElvPolyFC = GetFeatureClass(TempAggFCName, ref ErrorMessage);
             if (string.IsNullOrEmpty(ErrorMessage) == false)
             {
                 ErrorMessage = "Could not find temporary FeatureClass " + TempAggFCName + ". " + ErrorMessage;
                 return;
             }
 
-            Util.SetProgressMessage("Validating excluded area polygons");
+            SetProgressMessage("Validating excluded area polygons");
 
-            NewElvPolyFC = Util.GP_Clip_analysis(TempClipFCName, NewElvPolyFC, BoundaryFC, ref ErrorMessage);
+            NewElvPolyFC = GP_Clip_analysis(TempClipFCName, NewElvPolyFC, BoundaryFC, ref ErrorMessage);
             if (string.IsNullOrEmpty(ErrorMessage) == false) return;
 
 
@@ -1489,17 +1510,18 @@ namespace NPSTransectTool
 
             ShapeAreaIndex = NewElvPolyFC.FindField(NewElvPolyFC.AreaField.Name);
 
-            MaxShapeArea = (double)Util.SafeConvert(Util.GetFirstRecordValue(BoundaryFC,
-                BoundaryFC.AreaField.Name, "SurveyID=" + SurveyID), typeof(double));
+            MaxShapeArea = (double) SafeConvert(GetFirstRecordValue(BoundaryFC,
+                                                                    BoundaryFC.AreaField.Name, "SurveyID=" + SurveyID),
+                                                typeof (double));
 
-            Util.SetProgressMessage("Importing excluded area polygons to Survey");
+            SetProgressMessage("Importing excluded area polygons to Survey");
 
             while ((TempFeature = TempCursor.NextFeature()) != null)
             {
                 if (TempFeature.Shape == null) continue;
 
-                CurrentShapeArea = (double)Util.SafeConvert(TempFeature.get_Value(ShapeAreaIndex), typeof(double));
-                if ((CurrentShapeArea / MaxShapeArea) >= 0.95) continue;
+                CurrentShapeArea = (double) SafeConvert(TempFeature.get_Value(ShapeAreaIndex), typeof (double));
+                if ((CurrentShapeArea/MaxShapeArea) >= 0.95) continue;
 
 
                 InsertBuffer.Shape = TempFeature.ShapeCopy;
@@ -1512,34 +1534,36 @@ namespace NPSTransectTool
             InsertCursor = null;
 
 
-            Util.SetProgressMessage("Cleaning up temp files");
-            Util.DeleteDataset(TempElvFCName, esriDatasetType.esriDTFeatureClass, ref InternalErrors);
-            Util.DeleteDataset(TempClipFCName, esriDatasetType.esriDTFeatureClass, ref InternalErrors);
-            Util.DeleteDataset(TempAggFCName, esriDatasetType.esriDTFeatureClass, ref InternalErrors);
-            Util.DeleteDataset(TempClipFCName + "_Tbl", esriDatasetType.esriDTTable, ref InternalErrors);
-            Util.DeleteDataset(TempAggFCName + "_Tbl", esriDatasetType.esriDTTable, ref InternalErrors);
+            SetProgressMessage("Cleaning up temp files");
+            DeleteDataset(TempElvFCName, esriDatasetType.esriDTFeatureClass, ref InternalErrors);
+            DeleteDataset(TempClipFCName, esriDatasetType.esriDTFeatureClass, ref InternalErrors);
+            DeleteDataset(TempAggFCName, esriDatasetType.esriDTFeatureClass, ref InternalErrors);
+            DeleteDataset(TempClipFCName + "_Tbl", esriDatasetType.esriDTTable, ref InternalErrors);
+            DeleteDataset(TempAggFCName + "_Tbl", esriDatasetType.esriDTTable, ref InternalErrors);
 
 
-            Util.CreateFillerPolygon(ElvPolyFC, SurveyID, ref InternalErrors);
-
+            CreateFillerPolygon(ElvPolyFC, SurveyID, ref InternalErrors);
         }
 
         /// <summary>
-        /// generate flatarea poylgons for the specified survey using the specified raster
+        ///     generate flatarea poylgons for the specified survey using the specified raster
         /// </summary>
         public static void GenerateFlatAreaPolygons(int SurveyID, double MinSlope, double MaxSlope,
-            IGeoDataset ClippedRasterDS, ref string ErrorMessage)
+                                                    IGeoDataset ClippedRasterDS, ref string ErrorMessage)
         {
-            ESRI.ArcGIS.Geoprocessing.IGeoProcessorResult GeoResult = null;
-            ESRI.ArcGIS.Geoprocessing.IGeoProcessor ThisGeoProcessor = null;
-            ESRI.ArcGIS.GeoAnalyst.IRasterDescriptor ThisRasterDescriptor;
-            ESRI.ArcGIS.GeoAnalyst.IConversionOp ThisConversionOp;
+            IGeoProcessorResult GeoResult = null;
+            IGeoProcessor ThisGeoProcessor = null;
+            IRasterDescriptor ThisRasterDescriptor;
+            IConversionOp ThisConversionOp;
             IGeoDataset FloatRasterDS = null, IntRasterDS = null;
-            ESRI.ArcGIS.esriSystem.IVariantArray GPParams;
-            ESRI.ArcGIS.GeoAnalyst.ISurfaceOp ThisSurfaceOp;
-            ESRI.ArcGIS.SpatialAnalyst.IMathOp ThisMathOp;
-            IFeatureClass TempFlatAreasPolyFC = null, TempAggregateFC = null,
-                TempAggregateClipFC = null, BoundaryFC = null, FlatAreasFC = null;
+            IVariantArray GPParams;
+            ISurfaceOp ThisSurfaceOp;
+            IMathOp ThisMathOp;
+            IFeatureClass TempFlatAreasPolyFC = null,
+                          TempAggregateFC = null,
+                          TempAggregateClipFC = null,
+                          BoundaryFC = null,
+                          FlatAreasFC = null;
             IQueryFilter ThisQueryFilter;
             IFeatureCursor FlatAreasCursor, TempAggregateClipCursor;
             IFeatureBuffer FlatAreasFBuffer;
@@ -1556,86 +1580,91 @@ namespace NPSTransectTool
             zFactor = 1;
 
 
-            BoundaryFC = Util.GetFeatureClass(NPS.LYR_SURVEY_BOUNDARY, ref ErrorMessage);
+            BoundaryFC = GetFeatureClass(NPS.LYR_SURVEY_BOUNDARY, ref ErrorMessage);
             if (string.IsNullOrEmpty(ErrorMessage) == false) return;
 
-            FlatAreasFC = Util.GetFeatureClass(NPS.LYR_FLAT_AREAS, ref ErrorMessage);
+            FlatAreasFC = GetFeatureClass(NPS.LYR_FLAT_AREAS, ref ErrorMessage);
             if (string.IsNullOrEmpty(ErrorMessage) == false) return;
 
             SurveyIDIndex = FlatAreasFC.FindField("SurveyID");
             if (SurveyIDIndex == -1)
             {
-                ErrorMessage = "Could not find a SurveyID field on the " + ((IDataset)FlatAreasFC).Name + " FeatureClass.";
+                ErrorMessage = "Could not find a SurveyID field on the " + ((IDataset) FlatAreasFC).Name +
+                               " FeatureClass.";
                 return;
             }
 
 
-            Util.SetProgressMessage("Deleting old temp files");
-            Util.DeleteDataset(TempFlatAreasPolyFCName, esriDatasetType.esriDTFeatureClass, ref InternalErrors);
-            Util.DeleteDataset(TempAggregateFCName, esriDatasetType.esriDTFeatureClass, ref InternalErrors);
-            Util.DeleteDataset(TempClipFCName, esriDatasetType.esriDTFeatureClass, ref InternalErrors);
-            Util.DeleteDataset(TempAggregateFCName + "_Tbl", esriDatasetType.esriDTTable, ref InternalErrors);
-            Util.DeleteDataset(TempClipFCName + "_Tbl", esriDatasetType.esriDTTable, ref InternalErrors);
+            SetProgressMessage("Deleting old temp files");
+            DeleteDataset(TempFlatAreasPolyFCName, esriDatasetType.esriDTFeatureClass, ref InternalErrors);
+            DeleteDataset(TempAggregateFCName, esriDatasetType.esriDTFeatureClass, ref InternalErrors);
+            DeleteDataset(TempClipFCName, esriDatasetType.esriDTFeatureClass, ref InternalErrors);
+            DeleteDataset(TempAggregateFCName + "_Tbl", esriDatasetType.esriDTTable, ref InternalErrors);
+            DeleteDataset(TempClipFCName + "_Tbl", esriDatasetType.esriDTTable, ref InternalErrors);
 
-            ThisSurfaceOp = new ESRI.ArcGIS.GeoAnalyst.RasterSurfaceOpClass();
+            ThisSurfaceOp = new RasterSurfaceOpClass();
 
             try
             {
-                Util.SetProgressMessage("Computing slope values from DEM");
+                SetProgressMessage("Computing slope values from DEM");
 
                 FloatRasterDS = ThisSurfaceOp.Slope(ClippedRasterDS,
-                    ESRI.ArcGIS.GeoAnalyst.esriGeoAnalysisSlopeEnum.esriGeoAnalysisSlopeDegrees, ref zFactor);
+                                                    esriGeoAnalysisSlopeEnum.esriGeoAnalysisSlopeDegrees, ref zFactor);
             }
             catch (Exception ex)
             {
-                ErrorMessage = "Error occured while converting DEM evelation values to float slope values. " + ex.Message;
+                ErrorMessage = "Error occured while converting DEM evelation values to float slope values. " +
+                               ex.Message;
                 return;
             }
 
             try
             {
-                Util.SetProgressMessage("Converting DEM values to integers");
+                SetProgressMessage("Converting DEM values to integers");
 
-                ThisMathOp = new ESRI.ArcGIS.SpatialAnalyst.RasterMathOpsClass();
+                ThisMathOp = new RasterMathOpsClass();
                 IntRasterDS = ThisMathOp.Int(FloatRasterDS);
             }
             catch (Exception ex)
             {
-                ErrorMessage = "Error occured while converting DEM float slope values to slope integer values. " + ex.Message;
+                ErrorMessage = "Error occured while converting DEM float slope values to slope integer values. " +
+                               ex.Message;
                 return;
             }
 
             try
             {
-                Util.SetProgressMessage("Building flat area polygons from DEM");
+                SetProgressMessage("Building flat area polygons from DEM");
 
                 ThisQueryFilter = new QueryFilterClass();
                 ThisQueryFilter.WhereClause = " Value >= " + MinSlope + " AND Value <= " + MaxSlope;
 
-                ThisRasterDescriptor = new ESRI.ArcGIS.GeoAnalyst.RasterDescriptorClass();
+                ThisRasterDescriptor = new RasterDescriptorClass();
                 ThisRasterDescriptor.Create(IntRasterDS as IRaster, ThisQueryFilter, "Value");
 
-                ThisConversionOp = new ESRI.ArcGIS.GeoAnalyst.RasterConversionOpClass();
-                TempFlatAreasPolyFC = ThisConversionOp.RasterDataToPolygonFeatureData(ThisRasterDescriptor as IGeoDataset,
-                    NPS.Workspace, TempFlatAreasPolyFCName, true) as IFeatureClass;
+                ThisConversionOp = new RasterConversionOpClass();
+                TempFlatAreasPolyFC =
+                    ThisConversionOp.RasterDataToPolygonFeatureData(ThisRasterDescriptor as IGeoDataset,
+                                                                    NPS.Workspace, TempFlatAreasPolyFCName, true) as
+                    IFeatureClass;
             }
             catch (Exception ex)
             {
                 ErrorMessage = "Error occured while generating a FeatureClass of flat "
-                + "areas from the default DEM file. " + ex.Message;
+                               + "areas from the default DEM file. " + ex.Message;
                 return;
             }
 
 
             try
             {
-                Util.SetProgressMessage("Aggregating flat area polygons");
+                SetProgressMessage("Aggregating flat area polygons");
 
-                ThisGeoProcessor = new ESRI.ArcGIS.Geoprocessing.GeoProcessor();
-                GPParams = new ESRI.ArcGIS.esriSystem.VarArrayClass();
+                ThisGeoProcessor = new GeoProcessor();
+                GPParams = new VarArrayClass();
 
-                GPParams.Add(System.IO.Path.Combine(NPS.DatabasePath, TempFlatAreasPolyFCName));
-                GPParams.Add(System.IO.Path.Combine(NPS.DatabasePath, TempAggregateFCName));
+                GPParams.Add(Path.Combine(NPS.DatabasePath, TempFlatAreasPolyFCName));
+                GPParams.Add(Path.Combine(NPS.DatabasePath, TempAggregateFCName));
                 GPParams.Add("1 Meters");
 
                 GeoResult = ThisGeoProcessor.Execute("AggregatePolygons_management", GPParams, null);
@@ -1643,29 +1672,28 @@ namespace NPSTransectTool
             catch (Exception ex)
             {
                 ErrorMessage = string.Format("Geoprocessor error:\r\nTask:AggregatePolygons_management\r\n"
-                    + "Params:{0},{1},{2}\r\nException:{3}", System.IO.Path.Combine(NPS.DatabasePath, TempFlatAreasPolyFCName),
-                    System.IO.Path.Combine(NPS.DatabasePath, TempAggregateFCName), "1 Meters", ex.Message);
+                                             + "Params:{0},{1},{2}\r\nException:{3}",
+                                             Path.Combine(NPS.DatabasePath, TempFlatAreasPolyFCName),
+                                             Path.Combine(NPS.DatabasePath, TempAggregateFCName), "1 Meters", ex.Message);
                 ThisGeoProcessor = null;
                 return;
             }
 
             ThisGeoProcessor = null;
 
-            Util.DeleteLayerFromMap(TempAggregateFCName);
+            DeleteLayerFromMap(TempAggregateFCName);
 
-            TempAggregateFC = Util.GetFeatureClass(TempAggregateFCName, ref ErrorMessage);
+            TempAggregateFC = GetFeatureClass(TempAggregateFCName, ref ErrorMessage);
             if (string.IsNullOrEmpty(ErrorMessage) == false)
             {
                 ErrorMessage = "Could not find temporary FeatureClass " + TempAggregateFCName + ". " + ErrorMessage;
                 return;
             }
 
-            Util.SetProgressMessage("Validating flat area polygons");
+            SetProgressMessage("Validating flat area polygons");
 
-            TempAggregateClipFC = Util.GP_Clip_analysis(TempClipFCName, TempAggregateFC, BoundaryFC, ref ErrorMessage);
+            TempAggregateClipFC = GP_Clip_analysis(TempClipFCName, TempAggregateFC, BoundaryFC, ref ErrorMessage);
             if (string.IsNullOrEmpty(ErrorMessage) == false) return;
-
-
 
 
             FlatAreasFBuffer = FlatAreasFC.CreateFeatureBuffer();
@@ -1677,7 +1705,7 @@ namespace NPSTransectTool
             TempAggregateClipCursor = TempAggregateClipFC.Search(ThisQueryFilter, false);
 
 
-            Util.SetProgressMessage("Importing flat area polygons to Survey");
+            SetProgressMessage("Importing flat area polygons to Survey");
 
             while ((TempAggregateClipFeature = TempAggregateClipCursor.NextFeature()) != null)
             {
@@ -1692,20 +1720,19 @@ namespace NPSTransectTool
             TempAggregateClipCursor = null;
             FlatAreasCursor = null;
 
-            Util.SetProgressMessage("Cleaning up temp files");
-            Util.DeleteDataset(TempFlatAreasPolyFCName, esriDatasetType.esriDTFeatureClass, ref InternalErrors);
-            Util.DeleteDataset(TempAggregateFCName, esriDatasetType.esriDTFeatureClass, ref InternalErrors);
-            Util.DeleteDataset(TempClipFCName, esriDatasetType.esriDTFeatureClass, ref InternalErrors);
-            Util.DeleteDataset(TempAggregateFCName + "_Tbl", esriDatasetType.esriDTTable, ref InternalErrors);
-            Util.DeleteDataset(TempClipFCName + "_Tbl", esriDatasetType.esriDTTable, ref InternalErrors);
+            SetProgressMessage("Cleaning up temp files");
+            DeleteDataset(TempFlatAreasPolyFCName, esriDatasetType.esriDTFeatureClass, ref InternalErrors);
+            DeleteDataset(TempAggregateFCName, esriDatasetType.esriDTFeatureClass, ref InternalErrors);
+            DeleteDataset(TempClipFCName, esriDatasetType.esriDTFeatureClass, ref InternalErrors);
+            DeleteDataset(TempAggregateFCName + "_Tbl", esriDatasetType.esriDTTable, ref InternalErrors);
+            DeleteDataset(TempClipFCName + "_Tbl", esriDatasetType.esriDTTable, ref InternalErrors);
 
 
-            Util.CreateFillerPolygon(FlatAreasFC, SurveyID, ref InternalErrors);
-
+            CreateFillerPolygon(FlatAreasFC, SurveyID, ref InternalErrors);
         }
 
         /// <summary>
-        /// generate random points within survey boundary
+        ///     generate random points within survey boundary
         /// </summary>
         public static int GenerateRandomPoints(int SurveyID, int TotalPoints, ref string ErrorMessage)
         {
@@ -1721,13 +1748,13 @@ namespace NPSTransectTool
 
             NPS = NPSGlobal.Instance;
 
-            BoundaryPoly = Util.GetSurveyBoundary(Convert.ToString(SurveyID), ref ErrorMessage);
+            BoundaryPoly = GetSurveyBoundary(Convert.ToString(SurveyID), ref ErrorMessage);
             if (string.IsNullOrEmpty(ErrorMessage) == false) return -1;
 
-            ExcludeFC = Util.GetFeatureClass(NPS.LYR_EXCLUDED_AREAS, ref ErrorMessage);
+            ExcludeFC = GetFeatureClass(NPS.LYR_EXCLUDED_AREAS, ref ErrorMessage);
             if (string.IsNullOrEmpty(ErrorMessage) == false) return -1;
 
-            RandPointsFC = Util.GetFeatureClass(NPS.LYR_RANDOMPOINTS, ref ErrorMessage);
+            RandPointsFC = GetFeatureClass(NPS.LYR_RANDOMPOINTS, ref ErrorMessage);
             if (string.IsNullOrEmpty(ErrorMessage) == false) return -1;
 
             SurveyIDFieldIndex = RandPointsFC.FindField("SurveyID");
@@ -1736,8 +1763,8 @@ namespace NPSTransectTool
             InsertCursor = RandPointsFC.Insert(true);
             InsertBuffer = RandPointsFC.CreateFeatureBuffer();
 
-            NextBatcID = Util.GetHighestFieldValue(NPS.LYR_RANDOMPOINTS,
-                "BATCH_ID", "SurveyID=" + SurveyID, ref ErrorMessage);
+            NextBatcID = GetHighestFieldValue(NPS.LYR_RANDOMPOINTS,
+                                              "BATCH_ID", "SurveyID=" + SurveyID, ref ErrorMessage);
             if (string.IsNullOrEmpty(ErrorMessage) == false) return -1;
             NextBatcID++;
 
@@ -1752,19 +1779,19 @@ namespace NPSTransectTool
             while (PointIndex < TotalPoints)
             {
                 NewPoint = new PointClass();
-                NewPoint.SpatialReference = Util.GetDefaultSpatialReference();
+                NewPoint.SpatialReference = GetDefaultSpatialReference();
 
-                ValueX = ((UpperBoundX - LowerBoundX) * Util.GetRandomNumber()) + LowerBoundX;
-                ValueY = ((UpperBoundY - LowerBoundY) * Util.GetRandomNumber()) + LowerBoundY;
+                ValueX = ((UpperBoundX - LowerBoundX)*GetRandomNumber()) + LowerBoundX;
+                ValueY = ((UpperBoundY - LowerBoundY)*GetRandomNumber()) + LowerBoundY;
                 NewPoint.PutCoords(ValueX, ValueY);
 
                 if (ThisRelOp.Contains(NewPoint) == false) continue;
 
-                if (Util.HasRelationshipWithFC(NewPoint, esriSpatialRelEnum.esriSpatialRelWithin, ExcludeFC,
-                    "SurveyID=" + SurveyID) == true)
+                if (HasRelationshipWithFC(NewPoint, esriSpatialRelEnum.esriSpatialRelWithin, ExcludeFC,
+                                          "SurveyID=" + SurveyID))
                     continue;
 
-                InsertBuffer.Shape = ((ESRI.ArcGIS.esriSystem.IClone)NewPoint).Clone() as IPoint;
+                InsertBuffer.Shape = ((IClone) NewPoint).Clone() as IPoint;
                 InsertBuffer.set_Value(SurveyIDFieldIndex, SurveyID);
                 InsertBuffer.set_Value(BatchIDFieldIndex, NextBatcID);
 
@@ -1778,11 +1805,13 @@ namespace NPSTransectTool
         }
 
         /// <summary>
-        /// generate transects for spicified survey
+        ///     generate transects for spicified survey
         /// </summary>
         public static void GenerateTransectLines(int SurveyID, double MaxLineLength, double MinLineLength,
-            IGeoDataset ClippedRasterDS, int TransCreateAttempts, int TransectTotal, double TargetLength,
-            ref int ThisBatchID, ref int StraightCount, ref int ContourCount, ref int FailCount, ref string ErorrMessage)
+                                                 IGeoDataset ClippedRasterDS, int TransCreateAttempts, int TransectTotal,
+                                                 double TargetLength,
+                                                 ref int ThisBatchID, ref int StraightCount, ref int ContourCount,
+                                                 ref int FailCount, ref string ErorrMessage)
         {
             NPSGlobal NPS;
             IFeatureClass RandPointsFC, TransectFC, BoundaryFC, ExcludedFC, FlatAreasFC;
@@ -1791,11 +1820,22 @@ namespace NPSTransectTool
             IFeatureCursor InsertCursor;
             IFeatureBuffer InsertBuffer;
             IQueryFilter ThisQueryFilter;
-            int RandomPointOIDIndex, TransectIDFieldIndex, CorruptCount = 0,
-                TransectCount = 0, ElevValFieldIndex, NewBatchID, NewTransectID,
-                FlownFieldIndex, AcceptedFieldIndex, PT_IDFieldIndex, SurveyIDFieldIndex,
-                BatchIDFieldIndex, TargetLengthFieldIndex, TrnsectElevValFieldIndex,
-                TrnsectElevValFTFieldIndex, ElevValFTFieldIndex;
+            int RandomPointOIDIndex,
+                TransectIDFieldIndex,
+                CorruptCount = 0,
+                TransectCount = 0,
+                ElevValFieldIndex,
+                NewBatchID,
+                NewTransectID,
+                FlownFieldIndex,
+                AcceptedFieldIndex,
+                PT_IDFieldIndex,
+                SurveyIDFieldIndex,
+                BatchIDFieldIndex,
+                TargetLengthFieldIndex,
+                TrnsectElevValFieldIndex,
+                TrnsectElevValFTFieldIndex,
+                ElevValFTFieldIndex;
             IPolyline NewTrnPolyline;
             IPoint TempPoint;
             string TransType = "", ErrorMessage = "", DEMUnits = "";
@@ -1803,37 +1843,36 @@ namespace NPSTransectTool
             NPS = NPSGlobal.Instance;
 
             //get all necessary feature classes
-            RandPointsFC = Util.GetFeatureClass(NPS.LYR_RANDOMPOINTS, ref ErorrMessage);
+            RandPointsFC = GetFeatureClass(NPS.LYR_RANDOMPOINTS, ref ErorrMessage);
             if (string.IsNullOrEmpty(ErorrMessage) == false) return;
 
-            TransectFC = Util.GetFeatureClass(NPS.LYR_GENERATED_TRANSECTS, ref ErorrMessage);
+            TransectFC = GetFeatureClass(NPS.LYR_GENERATED_TRANSECTS, ref ErorrMessage);
             if (string.IsNullOrEmpty(ErorrMessage) == false) return;
 
-            BoundaryFC = Util.GetFeatureClass(NPS.LYR_SURVEY_BOUNDARY, ref ErorrMessage);
+            BoundaryFC = GetFeatureClass(NPS.LYR_SURVEY_BOUNDARY, ref ErorrMessage);
             if (string.IsNullOrEmpty(ErorrMessage) == false) return;
 
-            ExcludedFC = Util.GetFeatureClass(NPS.LYR_EXCLUDED_AREAS, ref ErorrMessage);
+            ExcludedFC = GetFeatureClass(NPS.LYR_EXCLUDED_AREAS, ref ErorrMessage);
             if (string.IsNullOrEmpty(ErorrMessage) == false) return;
 
-            FlatAreasFC = Util.GetFeatureClass(NPS.LYR_FLAT_AREAS, ref ErorrMessage);
+            FlatAreasFC = GetFeatureClass(NPS.LYR_FLAT_AREAS, ref ErorrMessage);
             if (string.IsNullOrEmpty(ErorrMessage) == false) return;
 
 
-            DEMUnits = Util.GetDatasetUnits(ClippedRasterDS, ref ErorrMessage);
-
+            DEMUnits = GetDatasetUnits(ClippedRasterDS, ref ErorrMessage);
 
 
             //get next available batch id
-            NewBatchID = Util.GetHighestFieldValue(NPS.LYR_GENERATED_TRANSECTS,
-                "BATCH_ID", "SurveyID=" + SurveyID, ref ErrorMessage);
+            NewBatchID = GetHighestFieldValue(NPS.LYR_GENERATED_TRANSECTS,
+                                              "BATCH_ID", "SurveyID=" + SurveyID, ref ErrorMessage);
             if (string.IsNullOrEmpty(ErrorMessage) == false) return;
             NewBatchID++;
 
             ThisBatchID = NewBatchID;
 
             //get next available transect id
-            NewTransectID = Util.GetHighestFieldValue(NPS.LYR_GENERATED_TRANSECTS,
-                "TransectID", "SurveyID=" + SurveyID, ref ErrorMessage);
+            NewTransectID = GetHighestFieldValue(NPS.LYR_GENERATED_TRANSECTS,
+                                                 "TransectID", "SurveyID=" + SurveyID, ref ErrorMessage);
             if (string.IsNullOrEmpty(ErrorMessage) == false) return;
             NewTransectID++;
 
@@ -1874,7 +1913,7 @@ namespace NPSTransectTool
                 if (RandPntFeature.ShapeCopy == null) continue;
 
                 //check if this point is corrupted, if so don't process it
-                CorruptFlag = (string)Util.SafeConvert(RandPntFeature.get_Value(AcceptedFieldIndex), typeof(string));
+                CorruptFlag = (string) SafeConvert(RandPntFeature.get_Value(AcceptedFieldIndex), typeof (string));
                 if (CorruptFlag == "?")
                 {
                     CorruptCount++;
@@ -1892,9 +1931,10 @@ namespace NPSTransectTool
                 TransType = "";
 
                 //generate new transect from random point
-                NewTrnPolyline = Util.CreateTransPolylineFromRandPoint(RandPntFeature.ShapeCopy as IPoint,
-                    MaxLineLength, MinLineLength, BoundaryFC, ExcludedFC, FlatAreasFC, SurveyID, ClippedRasterDS,
-                    TransCreateAttempts, ref TransType, ref ErrorMessage);
+                NewTrnPolyline = CreateTransPolylineFromRandPoint(RandPntFeature.ShapeCopy as IPoint,
+                                                                  MaxLineLength, MinLineLength, BoundaryFC, ExcludedFC,
+                                                                  FlatAreasFC, SurveyID, ClippedRasterDS,
+                                                                  TransCreateAttempts, ref TransType, ref ErrorMessage);
 
                 //update counters on startus of transect generation
                 if (TransType == "straight") StraightCount++;
@@ -1931,7 +1971,7 @@ namespace NPSTransectTool
 
 
                     //save from point coords in transect fields
-                    TempPoint = ((ESRI.ArcGIS.esriSystem.IClone)NewTrnPolyline.FromPoint).Clone() as IPoint;
+                    TempPoint = ((IClone) NewTrnPolyline.FromPoint).Clone() as IPoint;
 
                     if (TransectFC.FindField("PROJTD_X1") > -1)
                         InsertBuffer.set_Value(TransectFC.FindField("PROJTD_X1"), TempPoint.X);
@@ -1940,8 +1980,8 @@ namespace NPSTransectTool
                         InsertBuffer.set_Value(TransectFC.FindField("PROJTD_Y1"), TempPoint.Y);
 
                     //project transect from point to geo coordinates and save coords in transect fields
-                    ((IGeometry2)TempPoint).ProjectEx(Util.GetWGSSpatRef(),
-                        esriTransformDirection.esriTransformForward, null, false, 0, 0);
+                    ((IGeometry2) TempPoint).ProjectEx(GetWGSSpatRef(),
+                                                       esriTransformDirection.esriTransformForward, null, false, 0, 0);
 
                     if (TransectFC.FindField("DD_LONG1") > -1)
                         InsertBuffer.set_Value(TransectFC.FindField("DD_LONG1"), TempPoint.X);
@@ -1951,7 +1991,7 @@ namespace NPSTransectTool
 
 
                     //save to point coords in transect fields
-                    TempPoint = ((ESRI.ArcGIS.esriSystem.IClone)NewTrnPolyline.ToPoint).Clone() as IPoint;
+                    TempPoint = ((IClone) NewTrnPolyline.ToPoint).Clone() as IPoint;
 
                     if (TransectFC.FindField("PROJTD_X2") > -1)
                         InsertBuffer.set_Value(TransectFC.FindField("PROJTD_X2"), TempPoint.X);
@@ -1960,8 +2000,8 @@ namespace NPSTransectTool
                         InsertBuffer.set_Value(TransectFC.FindField("PROJTD_Y2"), TempPoint.Y);
 
                     //project transect to point to geo coordinates and save coords in transect fields
-                    ((IGeometry2)TempPoint).ProjectEx(Util.GetWGSSpatRef(),
-                        esriTransformDirection.esriTransformForward, null, false, 0, 0);
+                    ((IGeometry2) TempPoint).ProjectEx(GetWGSSpatRef(),
+                                                       esriTransformDirection.esriTransformForward, null, false, 0, 0);
 
                     if (TransectFC.FindField("DD_LONG2") > -1)
                         InsertBuffer.set_Value(TransectFC.FindField("DD_LONG2"), TempPoint.X);
@@ -1987,11 +2027,11 @@ namespace NPSTransectTool
                     if (AcceptedFieldIndex > -1) RandPntFeature.set_Value(AcceptedFieldIndex, "N");
                 }
 
-                Util.SetProgressMessage(string.Format("Generating Transects (Straight:{0}, Contour:{1}, Failed:{2}, Corrupted:{3})",
-                    StraightCount, ContourCount, FailCount, CorruptCount), false);
+                SetProgressMessage(
+                    string.Format("Generating Transects (Straight:{0}, Contour:{1}, Failed:{2}, Corrupted:{3})",
+                                  StraightCount, ContourCount, FailCount, CorruptCount), false);
 
                 RandPntCursor.UpdateFeature(RandPntFeature);
-
             }
 
             InsertCursor = null;
@@ -1999,14 +2039,16 @@ namespace NPSTransectTool
         }
 
         /// <summary>
-        /// create a transect from a source point
+        ///     create a transect from a source point
         /// </summary>
-        public static IPolyline CreateTransPolylineFromRandPoint(IPoint RandPoint, double MaxLineLength, double MinLineLength,
-            IFeatureClass BndPolyFC, IFeatureClass ExclPolyFC, IFeatureClass FlatAreasPolyFC, int SurveyID, IGeoDataset npsDemDataset,
-            int TransCreateAttempts, ref string TranType, ref string ErrorMessage)
+        public static IPolyline CreateTransPolylineFromRandPoint(IPoint RandPoint, double MaxLineLength,
+                                                                 double MinLineLength,
+                                                                 IFeatureClass BndPolyFC, IFeatureClass ExclPolyFC,
+                                                                 IFeatureClass FlatAreasPolyFC, int SurveyID,
+                                                                 IGeoDataset npsDemDataset,
+                                                                 int TransCreateAttempts, ref string TranType,
+                                                                 ref string ErrorMessage)
         {
-
-
             bool IsInExcludedAreas, IsInBndPoly;
             IPointCollection NewLine = null, NewLine2 = null, pPolyline = null;
             IPoint npsToPoint;
@@ -2016,22 +2058,22 @@ namespace NPSTransectTool
             TranType = "";
 
 
-
             //generate the first line in the transect
-            NewLine = Util.TryCreateTransectSide(RandPoint, SurveyID, ref DrawnAngle, FlatAreasPolyFC,
-                ExclPolyFC, BndPolyFC, MaxLineLength, MinLineLength, TransCreateAttempts) as IPointCollection;
+            NewLine = TryCreateTransectSide(RandPoint, SurveyID, ref DrawnAngle, FlatAreasPolyFC,
+                                            ExclPolyFC, BndPolyFC, MaxLineLength, MinLineLength, TransCreateAttempts) as
+                      IPointCollection;
 
             if (NewLine != null)
             {
                 //generate the second line in the transect
-                NewLine2 = Util.TryCreateTransectSide(RandPoint, SurveyID, ref DrawnAngle, FlatAreasPolyFC,
-                    ExclPolyFC, BndPolyFC, MaxLineLength, MinLineLength, TransCreateAttempts) as IPointCollection;
+                NewLine2 = TryCreateTransectSide(RandPoint, SurveyID, ref DrawnAngle, FlatAreasPolyFC,
+                                                 ExclPolyFC, BndPolyFC, MaxLineLength, MinLineLength,
+                                                 TransCreateAttempts) as IPointCollection;
             }
 
             //if we have both lines in the transect, create transect
             if (NewLine != null && NewLine2 != null)
             {
-
                 pPolyline = new PolylineClass();
                 npsToPoint = new PointClass();
 
@@ -2049,34 +2091,29 @@ namespace NPSTransectTool
             }
 
 
-
-
             //if transects could not be drawn (pPolyline is still nothing), get contour instead
             if (pPolyline == null)
             {
-
                 //try to create a contour since straight lines failed
-                pPolyline = Util.GetContourLineFromPoint(RandPoint, MaxLineLength, MinLineLength, npsDemDataset,
-                    SurveyID, BndPolyFC, ExclPolyFC) as IPointCollection;
+                pPolyline = GetContourLineFromPoint(RandPoint, MaxLineLength, MinLineLength, npsDemDataset,
+                                                    SurveyID, BndPolyFC, ExclPolyFC) as IPointCollection;
 
                 if (pPolyline != null)
                 {
-
                     //check if contour is within boundary
-                    IsInBndPoly = Util.HasRelationshipWithFC(pPolyline as IGeometry, esriSpatialRelEnum.esriSpatialRelWithin,
-                     BndPolyFC, "SurveyID=" + SurveyID);
+                    IsInBndPoly = HasRelationshipWithFC(pPolyline as IGeometry, esriSpatialRelEnum.esriSpatialRelWithin,
+                                                        BndPolyFC, "SurveyID=" + SurveyID);
 
                     //check if contour falls in excluded areas
-                    IsInExcludedAreas = Util.HasRelationshipWithFC(pPolyline as IGeometry, esriSpatialRelEnum.esriSpatialRelCrosses,
-                     ExclPolyFC, "SurveyID=" + SurveyID);
+                    IsInExcludedAreas = HasRelationshipWithFC(pPolyline as IGeometry,
+                                                              esriSpatialRelEnum.esriSpatialRelCrosses,
+                                                              ExclPolyFC, "SurveyID=" + SurveyID);
 
                     //if contour obtained falls in excluded areas, abandon poyline
-                    if (IsInBndPoly == false || IsInExcludedAreas == true) pPolyline = null;
-
+                    if (IsInBndPoly == false || IsInExcludedAreas) pPolyline = null;
                 }
 
                 if (pPolyline != null) TranType = "contour";
-
             }
 
             GC.Collect();
@@ -2085,13 +2122,13 @@ namespace NPSTransectTool
         }
 
         /// <summary>
-        /// create a contour transect from a source point
+        ///     create a contour transect from a source point
         /// </summary>
         public static IPolyline GetContourLineFromPoint(IPoint npsPoint, double MaxLineLength, double MinLineLength,
-            IGeoDataset npsDemDataset, int SurveyID, IFeatureClass BndPolyFC, IFeatureClass ExclPolyFC)
+                                                        IGeoDataset npsDemDataset, int SurveyID, IFeatureClass BndPolyFC,
+                                                        IFeatureClass ExclPolyFC)
         {
-
-            ESRI.ArcGIS.GeoAnalyst.ISurfaceOp2 npsSurfaceOp;
+            ISurfaceOp2 npsSurfaceOp;
             IPolyline npsPolyline, npsClippedPolyline, PrevTryPolyline = null;
             bool DidMaxLengthFit, IsInBndPoly, IsInExcludedAreas;
             int LengthAttempts;
@@ -2101,10 +2138,10 @@ namespace NPSTransectTool
             //determine a set number of times to try generating intermidiate lengths in both min and max
             //lengths were successful
             LengthAttempts = 20;
-            LengthTryIncrements = (MaxLineLength - MinLineLength) / LengthAttempts;
+            LengthTryIncrements = (MaxLineLength - MinLineLength)/LengthAttempts;
 
             //create a polyline from the elevation for the random point
-            npsSurfaceOp = new ESRI.ArcGIS.GeoAnalyst.RasterSurfaceOpClass();
+            npsSurfaceOp = new RasterSurfaceOpClass();
             npsPolyline = new PolylineClass();
             npsSurfaceOp.ContourAsPolyline(npsDemDataset, npsPoint, out npsPolyline, out ElevValue);
             npsSurfaceOp = null;
@@ -2116,25 +2153,26 @@ namespace NPSTransectTool
             DidMaxLengthFit = false;
 
             //try to cut the contour into the max length specified
-            npsClippedPolyline = Util.ClipContour(npsPoint, npsPolyline, (MaxLineLength / 2), (MaxLineLength / 2));
+            npsClippedPolyline = ClipContour(npsPoint, npsPolyline, (MaxLineLength/2), (MaxLineLength/2));
 
             IsInBndPoly = false;
             IsInExcludedAreas = false;
 
             if (npsClippedPolyline != null)
             {
-
                 //check if contour is within boundary
-                IsInBndPoly = Util.HasRelationshipWithFC(npsClippedPolyline as IGeometry,
-                    esriSpatialRelEnum.esriSpatialRelWithin, BndPolyFC, "SurveyID=" + SurveyID);
+                IsInBndPoly = HasRelationshipWithFC(npsClippedPolyline,
+                                                    esriSpatialRelEnum.esriSpatialRelWithin, BndPolyFC,
+                                                    "SurveyID=" + SurveyID);
 
                 //check if contour falls in excluded areas
-                IsInExcludedAreas = Util.HasRelationshipWithFC(npsClippedPolyline as IGeometry,
-                    esriSpatialRelEnum.esriSpatialRelCrosses, ExclPolyFC, "SurveyID=" + SurveyID);
+                IsInExcludedAreas = HasRelationshipWithFC(npsClippedPolyline,
+                                                          esriSpatialRelEnum.esriSpatialRelCrosses, ExclPolyFC,
+                                                          "SurveyID=" + SurveyID);
             }
 
             //if contour obtained falls in excluded areas, abandon poyline
-            if (IsInBndPoly == false || IsInExcludedAreas == true) npsClippedPolyline = null;
+            if (IsInBndPoly == false || IsInExcludedAreas) npsClippedPolyline = null;
 
             //remember if max length fit
             if (npsClippedPolyline != null) DidMaxLengthFit = true;
@@ -2142,34 +2180,33 @@ namespace NPSTransectTool
 
             //if the max length did not fit, try the min length
             if (npsClippedPolyline == null)
-                npsClippedPolyline = Util.ClipContour(npsPoint, npsPolyline, (MinLineLength / 2), (MinLineLength / 2));
+                npsClippedPolyline = ClipContour(npsPoint, npsPolyline, (MinLineLength/2), (MinLineLength/2));
 
             //check if the shortest length can fit
             if (npsClippedPolyline != null)
             {
-
                 //check if contour is within boundary
-                IsInBndPoly = Util.HasRelationshipWithFC(npsClippedPolyline as IGeometry,
-                    esriSpatialRelEnum.esriSpatialRelWithin, BndPolyFC, "SurveyID=" + SurveyID);
+                IsInBndPoly = HasRelationshipWithFC(npsClippedPolyline,
+                                                    esriSpatialRelEnum.esriSpatialRelWithin, BndPolyFC,
+                                                    "SurveyID=" + SurveyID);
 
                 //check if contour falls in excluded areas
-                IsInExcludedAreas = Util.HasRelationshipWithFC(npsClippedPolyline as IGeometry,
-                    esriSpatialRelEnum.esriSpatialRelCrosses, ExclPolyFC, "SurveyID=" + SurveyID);
+                IsInExcludedAreas = HasRelationshipWithFC(npsClippedPolyline,
+                                                          esriSpatialRelEnum.esriSpatialRelCrosses, ExclPolyFC,
+                                                          "SurveyID=" + SurveyID);
             }
 
             //if the min failed then clear it
-            if (IsInBndPoly == false || IsInExcludedAreas == true) npsClippedPolyline = null;
+            if (IsInBndPoly == false || IsInExcludedAreas) npsClippedPolyline = null;
 
             //if the max length failed but the min length fit, then try various lengths
             if (npsClippedPolyline != null && DidMaxLengthFit == false)
             {
-
-                CurTransLength = (MinLineLength / 2) + LengthTryIncrements;
+                CurTransLength = (MinLineLength/2) + LengthTryIncrements;
                 while (npsClippedPolyline != null)
                 {
-
                     PrevTryPolyline = npsClippedPolyline;
-                    npsClippedPolyline = Util.ClipContour(npsPoint, npsPolyline, CurTransLength, CurTransLength);
+                    npsClippedPolyline = ClipContour(npsPoint, npsPolyline, CurTransLength, CurTransLength);
 
                     IsInBndPoly = false;
                     IsInExcludedAreas = false;
@@ -2177,38 +2214,46 @@ namespace NPSTransectTool
                     if (npsClippedPolyline != null)
                     {
                         //check if contour is within boundary
-                        IsInBndPoly = Util.HasRelationshipWithFC(npsClippedPolyline as IGeometry,
-                            esriSpatialRelEnum.esriSpatialRelWithin, BndPolyFC, "SurveyID=" + SurveyID);
+                        IsInBndPoly = HasRelationshipWithFC(npsClippedPolyline,
+                                                            esriSpatialRelEnum.esriSpatialRelWithin, BndPolyFC,
+                                                            "SurveyID=" + SurveyID);
 
                         //check if contour falls in excluded areas
-                        IsInExcludedAreas = Util.HasRelationshipWithFC(npsClippedPolyline as IGeometry,
-                            esriSpatialRelEnum.esriSpatialRelCrosses, ExclPolyFC, "SurveyID=" + SurveyID);
+                        IsInExcludedAreas = HasRelationshipWithFC(npsClippedPolyline,
+                                                                  esriSpatialRelEnum.esriSpatialRelCrosses, ExclPolyFC,
+                                                                  "SurveyID=" + SurveyID);
                     }
 
                     //if contour obtained falls in excluded areas, abandon poyline
-                    if (IsInBndPoly == false || IsInExcludedAreas == true) npsClippedPolyline = null;
+                    if (IsInBndPoly == false || IsInExcludedAreas) npsClippedPolyline = null;
 
                     CurTransLength = CurTransLength + LengthTryIncrements;
-
                 }
 
                 //set the last successful as the clipped polyline
                 npsClippedPolyline = PrevTryPolyline;
-
             }
 
             return npsClippedPolyline;
         }
 
         /// <summary>
-        /// clip a polyline at the specified lengths
+        ///     clip a polyline at the specified lengths
         /// </summary>
         public static IPolyline ClipContour(IPoint npsPoint, IPolyline npsPolyline, double RangeLeft, double RangeRight)
         {
             ICurve NewPolyline = null, pl2, pl1;
             IPoint npsExactPoint;
-            double PolylineLength, DistanceFromStart = 0, DistanceFromCurve = 0, NewLineEnd,
-                AmountOver, start1 = 0, start2 = 0, end1 = 0, end2 = 0, NewLineStart;
+            double PolylineLength,
+                   DistanceFromStart = 0,
+                   DistanceFromCurve = 0,
+                   NewLineEnd,
+                   AmountOver,
+                   start1 = 0,
+                   start2 = 0,
+                   end1 = 0,
+                   end2 = 0,
+                   NewLineStart;
             bool npsRightSide = false, IsOutOfBoundsLeft, IsOutOfBoundsRight;
             ISegmentCollection newpl = null;
 
@@ -2220,13 +2265,12 @@ namespace NPSTransectTool
             //get the distance of the point from the start of the contour
             npsExactPoint = new PointClass();
             npsPolyline.QueryPointAndDistance(esriSegmentExtension.esriNoExtension, npsPoint, false,
-                npsExactPoint, ref DistanceFromStart, ref DistanceFromCurve, ref npsRightSide);
+                                              npsExactPoint, ref DistanceFromStart, ref DistanceFromCurve,
+                                              ref npsRightSide);
 
             //if (contour)polyline is not a closed line
             if (npsPolyline.IsClosed == false)
             {
-
-
                 IsOutOfBoundsLeft = false;
                 IsOutOfBoundsRight = false;
 
@@ -2240,10 +2284,9 @@ namespace NPSTransectTool
 
 
                 //if contour is outbound to the left, then try to shift it to the right
-                if (IsOutOfBoundsLeft == true && IsOutOfBoundsRight == false)
+                if (IsOutOfBoundsLeft && IsOutOfBoundsRight == false)
                 {
-
-                    AmountOver = (DistanceFromStart - RangeLeft) * -1;
+                    AmountOver = (DistanceFromStart - RangeLeft)*-1;
 
                     if (((DistanceFromStart + RangeRight) + AmountOver) < PolylineLength)
                     {
@@ -2258,13 +2301,12 @@ namespace NPSTransectTool
                 }
 
                 //if contour is out of bounds to the right, then try to shift it to the left
-                if (IsOutOfBoundsLeft == false && IsOutOfBoundsRight == true)
+                if (IsOutOfBoundsLeft == false && IsOutOfBoundsRight)
                 {
                     AmountOver = (DistanceFromStart + RangeRight) - PolylineLength;
 
                     if (((DistanceFromStart - RangeLeft) - AmountOver) >= 0)
                     {
-
                         NewLineStart = (DistanceFromStart - RangeLeft) - AmountOver;
                         NewLineEnd = PolylineLength;
                     }
@@ -2276,7 +2318,7 @@ namespace NPSTransectTool
                 }
 
                 //since the contour is to short on both ends to create the new polyline,abound operation
-                if (IsOutOfBoundsLeft == true && IsOutOfBoundsRight == true)
+                if (IsOutOfBoundsLeft && IsOutOfBoundsRight)
                 {
                     NewLineStart = -1;
                     NewLineEnd = -1;
@@ -2284,18 +2326,14 @@ namespace NPSTransectTool
 
                 if (NewLineStart != -1 && NewLineEnd != -1)
                 {
-
                     NewPolyline = new PolylineClass();
                     npsPolyline.GetSubcurve(NewLineStart, NewLineEnd, false, out NewPolyline);
-
                 }
             }
             else //if polyline is closed
             {
                 if ((RangeLeft + RangeRight) < PolylineLength)
                 {
-
-
                     pl1 = new PolylineClass();
                     pl2 = new PolylineClass();
                     newpl = new PolylineClass();
@@ -2304,13 +2342,11 @@ namespace NPSTransectTool
                     //a sub curve as normal
                     if ((DistanceFromStart - RangeLeft) >= 0 && (DistanceFromStart + RangeRight) < PolylineLength)
                     {
-
                         NewLineStart = DistanceFromStart - RangeLeft;
                         NewLineEnd = DistanceFromStart + RangeRight;
 
                         NewPolyline = new PolylineClass();
                         npsPolyline.GetSubcurve(NewLineStart, NewLineEnd, false, out NewPolyline);
-
                     }
                     else
                     {
@@ -2320,23 +2356,19 @@ namespace NPSTransectTool
                         //if left range oversteps start/end then...
                         if ((DistanceFromStart - RangeLeft) < 0)
                         {
-
-                            start1 = PolylineLength - ((DistanceFromStart - RangeLeft) * -1);
+                            start1 = PolylineLength - ((DistanceFromStart - RangeLeft)*-1);
                             end1 = PolylineLength;
                             start2 = 0;
                             end2 = DistanceFromStart + RangeRight;
-
                         }
 
                         //if right range oversteps start/end then...
                         if ((DistanceFromStart + RangeRight) > PolylineLength)
                         {
-
                             start1 = DistanceFromStart - RangeLeft;
                             end1 = PolylineLength;
                             start2 = 0;
                             end2 = (DistanceFromStart + RangeRight) - PolylineLength;
-
                         }
 
                         //combine sub curves
@@ -2345,36 +2377,33 @@ namespace NPSTransectTool
                         newpl.AddSegmentCollection(pl1 as ISegmentCollection);
                         newpl.AddSegmentCollection(pl2 as ISegmentCollection);
                         NewPolyline = newpl as ICurve;
-
                     }
                 }
             }
 
 
-
             return NewPolyline as IPolyline;
-
         }
 
         /// <summary>
-        /// try to generate a transect line side in an allowed area from a source point
+        ///     try to generate a transect line side in an allowed area from a source point
         /// </summary>
         public static IPolyline TryCreateTransectSide(IPoint RandPoint, int SurveyID, ref double DrawnAngle,
-         IFeatureClass FlatAreasPolyFC, IFeatureClass ExclPolyFC, IFeatureClass BndPolyFC,
-         double MaxLineLength, double MinLineLength, int TransCreateAttempts)
+                                                      IFeatureClass FlatAreasPolyFC, IFeatureClass ExclPolyFC,
+                                                      IFeatureClass BndPolyFC,
+                                                      double MaxLineLength, double MinLineLength,
+                                                      int TransCreateAttempts)
         {
-
             int LengthAttempts, Counter;
             double LengthTryIncrements, TryAngle, CurTryLength, StraightAngle;
             IPolyline PrevLineAttempt = null, NewLine = null;
             bool DidDrawMaxLength, IsStaticAngle;
 
 
-
             //determine a set number of times to try generating intermidiate lengths in both min and max
             //lengths were successful
             LengthAttempts = 20;
-            LengthTryIncrements = (MaxLineLength - MinLineLength) / LengthAttempts;
+            LengthTryIncrements = (MaxLineLength - MinLineLength)/LengthAttempts;
 
             //get opposite angle to draw straight line
             StraightAngle = -1;
@@ -2398,15 +2427,14 @@ namespace NPSTransectTool
             Counter = 0;
             while (NewLine == null && Counter < TransCreateAttempts)
             {
-                NewLine = Util.TryCreateTransLine(MaxLineLength / 2, RandPoint, SurveyID, ref TryAngle, IsStaticAngle,
-                     FlatAreasPolyFC, ExclPolyFC, BndPolyFC);
+                NewLine = TryCreateTransLine(MaxLineLength/2, RandPoint, SurveyID, ref TryAngle, IsStaticAngle,
+                                             FlatAreasPolyFC, ExclPolyFC, BndPolyFC);
                 if (NewLine != null) break;
 
                 Counter = Counter + 1;
                 TryAngle = DrawnAngle;
                 IsStaticAngle = false;
             }
-
 
 
             //remember if we were able to draw the max length
@@ -2426,8 +2454,8 @@ namespace NPSTransectTool
                 Counter = 0;
                 while (NewLine == null && Counter < TransCreateAttempts)
                 {
-                    NewLine = Util.TryCreateTransLine(MinLineLength / 2, RandPoint, SurveyID, ref TryAngle, IsStaticAngle,
-                        FlatAreasPolyFC, ExclPolyFC, BndPolyFC);
+                    NewLine = TryCreateTransLine(MinLineLength/2, RandPoint, SurveyID, ref TryAngle, IsStaticAngle,
+                                                 FlatAreasPolyFC, ExclPolyFC, BndPolyFC);
                     if (NewLine != null) break;
                     Counter = Counter + 1;
                     TryAngle = DrawnAngle;
@@ -2441,20 +2469,19 @@ namespace NPSTransectTool
             {
                 Counter = 0;
                 IsStaticAngle = true;
-                CurTryLength = MinLineLength / 2;
+                CurTryLength = MinLineLength/2;
                 while (NewLine != null && Counter < TransCreateAttempts)
                 {
                     PrevLineAttempt = NewLine;
                     CurTryLength = CurTryLength + LengthTryIncrements;
 
-                    NewLine = Util.TryCreateTransLine(CurTryLength, RandPoint, SurveyID, ref TryAngle, IsStaticAngle,
-                         FlatAreasPolyFC, ExclPolyFC, BndPolyFC);
+                    NewLine = TryCreateTransLine(CurTryLength, RandPoint, SurveyID, ref TryAngle, IsStaticAngle,
+                                                 FlatAreasPolyFC, ExclPolyFC, BndPolyFC);
 
                     Counter = Counter + 1;
                 }
 
                 NewLine = PrevLineAttempt;
-
             }
 
             //remember drawn angle
@@ -2465,12 +2492,13 @@ namespace NPSTransectTool
         }
 
         /// <summary>
-        /// try to generate a transect line in an allowed area from a source point
+        ///     try to generate a transect line in an allowed area from a source point
         /// </summary>
-        public static IPolyline TryCreateTransLine(double TransLength, IPoint RandPoint, int SurveyID, ref double TryAngle,
-                bool IsStaticAngle, IFeatureClass FlatAreasPolyFC, IFeatureClass ExclPolyFC, IFeatureClass BndPolyFC)
+        public static IPolyline TryCreateTransLine(double TransLength, IPoint RandPoint, int SurveyID,
+                                                   ref double TryAngle,
+                                                   bool IsStaticAngle, IFeatureClass FlatAreasPolyFC,
+                                                   IFeatureClass ExclPolyFC, IFeatureClass BndPolyFC)
         {
-
             IPoint EndPoint;
             double Upperbound, Lowerbound, AngleInRadians, AngleInDegrees, PI;
             bool IsInBndPoly, IsInExcludedAreas, IsInFlatAreas;
@@ -2479,7 +2507,7 @@ namespace NPSTransectTool
             object Missing = Type.Missing;
 
 
-            PI = 4 * Math.Atan(1);
+            PI = 4*Math.Atan(1);
             IsInExcludedAreas = false;
             IsInFlatAreas = false;
             IsInBndPoly = false;
@@ -2495,25 +2523,24 @@ namespace NPSTransectTool
             NewLine.AddPoint(RandPoint, ref Missing, ref Missing);
             NewLine.AddPoint(EndPoint, ref Missing, ref Missing);
 
-            if (IsStaticAngle == true)
+            if (IsStaticAngle)
                 AngleInDegrees = TryAngle;
+            else if (TryAngle == -1)
+            {
+                //generate a random angle at which to rotate line using random point as axis
+                Upperbound = 360;
+                Lowerbound = 1;
+                AngleInDegrees = Convert.ToInt32((Upperbound - Lowerbound + 1)*GetRandomNumber() + Lowerbound);
+            }
             else
-                if (TryAngle == -1)
-                {
-                    //generate a random angle at which to rotate line using random point as axis
-                    Upperbound = 360;
-                    Lowerbound = 1;
-                    AngleInDegrees = Convert.ToInt32((Upperbound - Lowerbound + 1) * Util.GetRandomNumber() + Lowerbound);
-                }
-                else
-                {
-                    //generate a random angle 90 degrees to the left and right of a specified try angle
-                    AngleInDegrees = Util.GetRandomAngleInRange(Convert.ToInt32(TryAngle), 90, 90);
-                }
+            {
+                //generate a random angle 90 degrees to the left and right of a specified try angle
+                AngleInDegrees = GetRandomAngleInRange(Convert.ToInt32(TryAngle), 90, 90);
+            }
 
 
             //convert angle from degrees to radians
-            AngleInRadians = AngleInDegrees * (PI / 180) * -1;
+            AngleInRadians = AngleInDegrees*(PI/180)*-1;
 
             //rotate line at random angle
             npsTransform2D = NewLine as ITransform2D;
@@ -2521,33 +2548,31 @@ namespace NPSTransectTool
 
             //check if new line falls in flat areas
 
-            IsInFlatAreas = Util.HasRelationshipWithFC(NewLine as IGeometry, esriSpatialRelEnum.esriSpatialRelWithin,
-            FlatAreasPolyFC, "SurveyID=" + SurveyID);
+            IsInFlatAreas = HasRelationshipWithFC(NewLine as IGeometry, esriSpatialRelEnum.esriSpatialRelWithin,
+                                                  FlatAreasPolyFC, "SurveyID=" + SurveyID);
 
             //check if  new line   falls in excluded areas
-            IsInExcludedAreas = Util.HasRelationshipWithFC(NewLine as IGeometry, esriSpatialRelEnum.esriSpatialRelCrosses,
-           ExclPolyFC, "SurveyID=" + SurveyID);
+            IsInExcludedAreas = HasRelationshipWithFC(NewLine as IGeometry, esriSpatialRelEnum.esriSpatialRelCrosses,
+                                                      ExclPolyFC, "SurveyID=" + SurveyID);
 
             //check if   new line  is within boundary
-            IsInBndPoly = Util.HasRelationshipWithFC(NewLine as IGeometry, esriSpatialRelEnum.esriSpatialRelWithin,
-            BndPolyFC, "SurveyID=" + SurveyID);
+            IsInBndPoly = HasRelationshipWithFC(NewLine as IGeometry, esriSpatialRelEnum.esriSpatialRelWithin,
+                                                BndPolyFC, "SurveyID=" + SurveyID);
 
-            if (IsInExcludedAreas == false && IsInBndPoly == true && IsInFlatAreas == true)
+            if (IsInExcludedAreas == false && IsInBndPoly && IsInFlatAreas)
             {
                 //return new line
                 TryAngle = AngleInDegrees;
                 return NewLine as IPolyline;
             }
             return null;
-
         }
 
         /// <summary>
-        /// get a random angle at which to generate a transect
+        ///     get a random angle at which to generate a transect
         /// </summary>
         public static int GetRandomAngleInRange(int Angle, int RangeLeft, int RangeRight)
         {
-
             int Counter, RandAngle, ReStartCounter, Val;
             int[] DegreeList, BannedValues;
 
@@ -2568,7 +2593,6 @@ namespace NPSTransectTool
             //set all the values in the ban range to the right to 1
             for (Counter = Angle; Counter <= (RangeRight + Angle); Counter++)
             {
-
                 if (ReStartCounter != -1)
                 {
                     if (Counter == ReStartCounter + 1) break;
@@ -2577,12 +2601,12 @@ namespace NPSTransectTool
                 if (Counter == 361)
                 {
                     ReStartCounter = RangeRight - (Counter - Angle);
-                    if (ReStartCounter == 0) break; ;
+                    if (ReStartCounter == 0) break;
+                    ;
                     Counter = 1;
                 }
 
                 BannedValues[Counter] = 1;
-
             }
 
             //set all the values in the ban range to the left to 1
@@ -2590,7 +2614,6 @@ namespace NPSTransectTool
             Val = (Angle - RangeLeft);
             for (Counter = Angle; Counter <= (Angle - RangeLeft); Counter--)
             {
-
                 if (ReStartCounter != -1)
                 {
                     if (Counter == ReStartCounter) break;
@@ -2604,15 +2627,13 @@ namespace NPSTransectTool
                 }
 
                 BannedValues[Counter] = 1;
-
             }
 
             //get a random number that is not in the ban range and return it
             RandAngle = -1;
             while (RandAngle == -1)
             {
-
-                RandAngle = Convert.ToInt32((360 - 1 + 1) * Util.GetRandomNumber() + 1);
+                RandAngle = Convert.ToInt32((360 - 1 + 1)*GetRandomNumber() + 1);
 
                 if (BannedValues[RandAngle] == 1)
                     RandAngle = -1;
@@ -2621,24 +2642,23 @@ namespace NPSTransectTool
             }
 
             return RandAngle;
-
         }
 
         /// <summary>
-        /// add elevation values from the specified batch of points for the specified survey
+        ///     add elevation values from the specified batch of points for the specified survey
         /// </summary>
-        public static void AddZValuesToPoints(int SurveyID, int NewBatchID, IGeoDataset ThisRasterDS, string ThisDEMUnits, ref string ErrorMessage)
+        public static void AddZValuesToPoints(int SurveyID, int NewBatchID, IGeoDataset ThisRasterDS,
+                                              string ThisDEMUnits, ref string ErrorMessage)
         {
-            Util.AddZValuesToPoints(SurveyID, NewBatchID, -1, ThisRasterDS, ThisDEMUnits, ref ErrorMessage);
+            AddZValuesToPoints(SurveyID, NewBatchID, -1, ThisRasterDS, ThisDEMUnits, ref ErrorMessage);
         }
+
         public static void AddZValuesToPoints(int SurveyID, int NewBatchID, int TempBatchID,
-            IGeoDataset ThisRasterDS, string ThisDEMUnits, ref string ErrorMessage)
+                                              IGeoDataset ThisRasterDS, string ThisDEMUnits, ref string ErrorMessage)
         {
-
-
-            ESRI.ArcGIS.Geoprocessing.IGeoProcessorResult GeoResult = null;
-            ESRI.ArcGIS.Geoprocessing.IGeoProcessor ThisGeoProcessor = null;
-            ESRI.ArcGIS.esriSystem.IVariantArray GPParams;
+            IGeoProcessorResult GeoResult = null;
+            IGeoProcessor ThisGeoProcessor = null;
+            IVariantArray GPParams;
             IFeatureClass TempFCHolderFC = null, PointFC = null;
             string CopyRandFilter = "", TempElePoints, TempFCHolder, InternalError = "";
             NPSGlobal NPS;
@@ -2654,18 +2674,18 @@ namespace NPSTransectTool
 
 
             if (string.IsNullOrEmpty(ErrorMessage))
-                PointFC = Util.GetFeatureClass(NPS.LYR_RANDOMPOINTS, ref ErrorMessage);
+                PointFC = GetFeatureClass(NPS.LYR_RANDOMPOINTS, ref ErrorMessage);
 
 
             if (string.IsNullOrEmpty(ErrorMessage) == false)
             {
-                Util.SetProgressMessage("Deleting old temp files");
+                SetProgressMessage("Deleting old temp files");
 
                 //delete the temporary table if it already exists
-                Util.DeleteDataset(TempElePoints, esriDatasetType.esriDTFeatureClass, ref InternalError);
-                Util.DeleteDataset(TempElePoints + "_Tbl", esriDatasetType.esriDTTable, ref InternalError);
-                Util.DeleteDataset(TempFCHolder, esriDatasetType.esriDTFeatureClass, ref InternalError);
-                Util.DeleteDataset(TempFCHolder + "_Tbl", esriDatasetType.esriDTTable, ref InternalError);
+                DeleteDataset(TempElePoints, esriDatasetType.esriDTFeatureClass, ref InternalError);
+                DeleteDataset(TempElePoints + "_Tbl", esriDatasetType.esriDTTable, ref InternalError);
+                DeleteDataset(TempFCHolder, esriDatasetType.esriDTFeatureClass, ref InternalError);
+                DeleteDataset(TempFCHolder + "_Tbl", esriDatasetType.esriDTTable, ref InternalError);
             }
 
 
@@ -2673,15 +2693,15 @@ namespace NPSTransectTool
             {
                 try
                 {
-                    Util.SetProgressMessage("Copying random points to temp FeatureClass");
+                    SetProgressMessage("Copying random points to temp FeatureClass");
 
-                    ThisGeoProcessor = new ESRI.ArcGIS.Geoprocessing.GeoProcessor();
-                    GPParams = new ESRI.ArcGIS.esriSystem.VarArrayClass();
+                    ThisGeoProcessor = new GeoProcessor();
+                    GPParams = new VarArrayClass();
 
                     GPParams.Add(NPS.Workspace.PathName);
                     GPParams.Add(TempFCHolder);
                     GPParams.Add("POINT");
-                    GPParams.Add(System.IO.Path.Combine(NPS.Workspace.PathName, ((IDataset)PointFC).Name));
+                    GPParams.Add(Path.Combine(NPS.Workspace.PathName, ((IDataset) PointFC).Name));
 
 
                     GeoResult = ThisGeoProcessor.Execute("CreateFeatureClass_management", GPParams, null);
@@ -2689,12 +2709,14 @@ namespace NPSTransectTool
                 catch (Exception ex)
                 {
                     ErrorMessage = string.Format("Geoprocessor error:\r\nTask:CreateFeatureClass_management\r\n"
-                        + "Params:{0},{1},{2},{3}\r\nException:{4}", NPS.Workspace.PathName, TempFCHolder, "POINT",
-                        System.IO.Path.Combine(NPS.Workspace.PathName, ((IDataset)PointFC).Name), ex.Message);
+                                                 + "Params:{0},{1},{2},{3}\r\nException:{4}", NPS.Workspace.PathName,
+                                                 TempFCHolder, "POINT",
+                                                 Path.Combine(NPS.Workspace.PathName, ((IDataset) PointFC).Name),
+                                                 ex.Message);
                 }
 
                 ThisGeoProcessor = null;
-                Util.DeleteLayerFromMap(TempFCHolder);
+                DeleteLayerFromMap(TempFCHolder);
             }
 
 
@@ -2704,26 +2726,23 @@ namespace NPSTransectTool
                 if (TempBatchID != -1) CopyRandFilter += " And BATCH_ID=" + TempBatchID;
 
                 //get the temp feature class and copy only surveyid points to it
-                TempFCHolderFC = Util.GetFeatureClass(TempFCHolder, ref ErrorMessage);
+                TempFCHolderFC = GetFeatureClass(TempFCHolder, ref ErrorMessage);
 
                 if (string.IsNullOrEmpty(ErrorMessage))
-                    Util.CopyFeatures(PointFC, CopyRandFilter, TempFCHolderFC, null, ref ErrorMessage);
+                    CopyFeatures(PointFC, CopyRandFilter, TempFCHolderFC, null, ref ErrorMessage);
 
                 int TestCount = FeatureCount(TempFCHolderFC, "");
-
             }
-
-
 
 
             if (string.IsNullOrEmpty(ErrorMessage))
             {
                 try
                 {
-                    Util.SetProgressMessage("Extracting point elevation from DEM");
+                    SetProgressMessage("Extracting point elevation from DEM");
 
-                    ThisGeoProcessor = new ESRI.ArcGIS.Geoprocessing.GeoProcessor();
-                    GPParams = new ESRI.ArcGIS.esriSystem.VarArrayClass();
+                    ThisGeoProcessor = new GeoProcessor();
+                    GPParams = new VarArrayClass();
 
                     //GPParams.Add(TempFCHolderFC);
                     //GPParams.Add(ThisRasterDS);
@@ -2732,16 +2751,16 @@ namespace NPSTransectTool
 
                     GPParams.Add(ThisRasterDS);
                     GPParams.Add(TempFCHolderFC);
-                    GPParams.Add("Spot");   // field name to add
-                    GPParams.Add(1);  // Z-Factor
+                    GPParams.Add("Spot"); // field name to add
+                    GPParams.Add(1); // Z-Factor
                     GeoResult = ThisGeoProcessor.Execute("SurfaceSpot_3D", GPParams, null);
                 }
                 catch (Exception ex)
                 {
                     ErrorMessage = string.Format("Geoprocessor error:\r\nTask:SurfaceSpot_3D\r\n"
-                        + "Params:{0},{1},{2},{3}\r\nException:{4}", ((IDataset)ThisRasterDS).Name,
-                        ((IDataset)TempFCHolderFC).Name, "Spot", 1, ex.Message);
-
+                                                 + "Params:{0},{1},{2},{3}\r\nException:{4}",
+                                                 ((IDataset) ThisRasterDS).Name,
+                                                 ((IDataset) TempFCHolderFC).Name, "Spot", 1, ex.Message);
                 }
 
                 ThisGeoProcessor = null;
@@ -2749,7 +2768,7 @@ namespace NPSTransectTool
                 //delete GPL[index] layers created from SurfaceSpot geoprocessor call
                 while (GPLIndex < 10)
                 {
-                    Util.DeleteLayerFromMap("GPL" + GPLIndex); 
+                    DeleteLayerFromMap("GPL" + GPLIndex);
                     GPLIndex++;
                 }
             }
@@ -2757,33 +2776,29 @@ namespace NPSTransectTool
 
             if (string.IsNullOrEmpty(ErrorMessage))
             {
-                Util.SetProgressMessage("Importing updated random points");
+                SetProgressMessage("Importing updated random points");
 
                 //delete all points for that survey
-                Util.DeleteFeatures(PointFC, CopyRandFilter, ref ErrorMessage);
+                DeleteFeatures(PointFC, CopyRandFilter, ref ErrorMessage);
 
 
                 //replace the points of that survey with these points
-                Util.CopyFeaturesForPoints(TempFCHolderFC, "", PointFC, NewBatchID, ThisDEMUnits, ref ErrorMessage);
+                CopyFeaturesForPoints(TempFCHolderFC, "", PointFC, NewBatchID, ThisDEMUnits, ref ErrorMessage);
             }
 
-            Util.SetProgressMessage("Cleaning up temp files");
-            Util.DeleteDataset(TempElePoints, esriDatasetType.esriDTFeatureClass, ref InternalError);
-            Util.DeleteDataset(TempElePoints + "_Tbl", esriDatasetType.esriDTTable, ref InternalError);
-            Util.DeleteDataset(TempFCHolder, esriDatasetType.esriDTFeatureClass, ref InternalError);
-            Util.DeleteDataset(TempFCHolder + "_Tbl", esriDatasetType.esriDTTable, ref InternalError);
-
-
-
+            SetProgressMessage("Cleaning up temp files");
+            DeleteDataset(TempElePoints, esriDatasetType.esriDTFeatureClass, ref InternalError);
+            DeleteDataset(TempElePoints + "_Tbl", esriDatasetType.esriDTTable, ref InternalError);
+            DeleteDataset(TempFCHolder, esriDatasetType.esriDTFeatureClass, ref InternalError);
+            DeleteDataset(TempFCHolder + "_Tbl", esriDatasetType.esriDTTable, ref InternalError);
         }
 
         /// <summary>
-        /// custom copy function for copy points with elevation value over to random points featureclass
+        ///     custom copy function for copy points with elevation value over to random points featureclass
         /// </summary>
         public static void CopyFeaturesForPoints(IFeatureClass FromFC, string FromWhereClause, IFeatureClass ToFC,
-            int NewBatchID, string ThisDEMUnits, ref string ErrorMessage)
+                                                 int NewBatchID, string ThisDEMUnits, ref string ErrorMessage)
         {
-
             IFeatureCursor FromFCCursor, ToFCCursor;
             IFeatureBuffer ToFCBuffer;
             IFeature FromFCFeature;
@@ -2791,9 +2806,20 @@ namespace NPSTransectTool
             string CurrentFieldName;
             double ZValue = 0;
             IPoint ThisPoint;
-            int FromFieldTotal, FromFieldCount, CurrentFieldIndex, ElevFTFieldIndex,
-                ProjFieldIndex, ProjX, ProjY, Lat, Lng, LatP, LngP, ElevMFieldIndex,
-                HasTransFieldIndex, count = 0;
+            int FromFieldTotal,
+                FromFieldCount,
+                CurrentFieldIndex,
+                ElevFTFieldIndex,
+                ProjFieldIndex,
+                ProjX,
+                ProjY,
+                Lat,
+                Lng,
+                LatP,
+                LngP,
+                ElevMFieldIndex,
+                HasTransFieldIndex,
+                count = 0;
             IPoint TempPoint;
             string thisVal;
 
@@ -2825,7 +2851,6 @@ namespace NPSTransectTool
             //loop through all features in FromFC that need to be added to ToFC
             while ((FromFCFeature = FromFCCursor.NextFeature()) != null)
             {
-
                 count = count + 1;
 
                 //add shape to new ToFC feature
@@ -2838,14 +2863,13 @@ namespace NPSTransectTool
                 FromFieldTotal = FromFC.Fields.FieldCount;
                 for (FromFieldCount = 0; FromFieldCount < FromFieldTotal; FromFieldCount++)
                 {
-
                     //get the from features current field name
                     CurrentFieldName = FromFC.Fields.get_Field(FromFieldCount).Name;
 
                     //if (CurrentFieldName == "RASTERVALU" || CurrentFieldName == "RASTERVALUE")
                     if (CurrentFieldName == "Spot")
                     {
-                        ZValue = (double)Util.SafeConvert(FromFCFeature.get_Value(FromFieldCount), typeof(double));
+                        ZValue = (double) SafeConvert(FromFCFeature.get_Value(FromFieldCount), typeof (double));
                         ThisPoint.Z = ZValue;
                     }
 
@@ -2853,15 +2877,14 @@ namespace NPSTransectTool
                     //not one of those listed below, copy over value
                     CurrentFieldIndex = ToFCBuffer.Fields.FindField(CurrentFieldName);
                     if (CurrentFieldIndex > -1
-                    && CurrentFieldName.ToUpper() != "SHAPE"
-                    && CurrentFieldName.ToUpper() != "SHAPE_AREA"
-                    && CurrentFieldName.ToUpper() != "SHAPE_LENGTH"
-                    && CurrentFieldName.ToUpper() != "OBJECTID"
-                    && CurrentFieldName.ToUpper() != "OBJECTID_1"
-                    && FromFC.Fields.get_Field(FromFieldCount).Type != esriFieldType.esriFieldTypeOID
-                    && FromFC.Fields.get_Field(FromFieldCount).Type != esriFieldType.esriFieldTypeGeometry)
+                        && CurrentFieldName.ToUpper() != "SHAPE"
+                        && CurrentFieldName.ToUpper() != "SHAPE_AREA"
+                        && CurrentFieldName.ToUpper() != "SHAPE_LENGTH"
+                        && CurrentFieldName.ToUpper() != "OBJECTID"
+                        && CurrentFieldName.ToUpper() != "OBJECTID_1"
+                        && FromFC.Fields.get_Field(FromFieldCount).Type != esriFieldType.esriFieldTypeOID
+                        && FromFC.Fields.get_Field(FromFieldCount).Type != esriFieldType.esriFieldTypeGeometry)
                     {
-
                         object testVal = FromFCFeature.get_Value(FromFieldCount);
                         if (CurrentFieldName == "BATCH_ID" && NewBatchID != -1)
                             testVal = NewBatchID;
@@ -2869,7 +2892,6 @@ namespace NPSTransectTool
 
                         ToFCBuffer.set_Value(CurrentFieldIndex, testVal);
                     }
-
                 }
 
 
@@ -2877,26 +2899,26 @@ namespace NPSTransectTool
                 if (ProjY > -1) ToFCBuffer.set_Value(ProjY, ThisPoint.Y);
 
 
-
-                if (ProjFieldIndex > -1) ToFCBuffer.set_Value(ProjFieldIndex, ((IGeoDataset)ToFC).SpatialReference.Name);
+                if (ProjFieldIndex > -1)
+                    ToFCBuffer.set_Value(ProjFieldIndex, ((IGeoDataset) ToFC).SpatialReference.Name);
 
                 if (HasTransFieldIndex > -1) ToFCBuffer.set_Value(HasTransFieldIndex, "P");
 
 
-                TempPoint = Util.ProjectToWGS(ThisPoint);
+                TempPoint = ProjectToWGS(ThisPoint);
                 if (Lng > -1) ToFCBuffer.set_Value(Lng, TempPoint.X);
 
                 if (Lat > -1) ToFCBuffer.set_Value(Lat, TempPoint.Y);
 
                 if (LngP > -1)
                 {
-                    thisVal = Util.DDtoDMS(TempPoint.X, true);
+                    thisVal = DDtoDMS(TempPoint.X, true);
                     ToFCBuffer.set_Value(LngP, thisVal);
                 }
 
                 if (LatP > -1)
                 {
-                    thisVal = Util.DDtoDMS(TempPoint.Y, false);
+                    thisVal = DDtoDMS(TempPoint.Y, false);
                     ToFCBuffer.set_Value(LatP, thisVal);
                 }
 
@@ -2904,14 +2926,14 @@ namespace NPSTransectTool
                 //set elev value to feature
                 if (ElevMFieldIndex > -1)
                 {
-                    if (ThisDEMUnits == "feet") ToFCBuffer.set_Value(ElevMFieldIndex, 0.3048 * ZValue);
+                    if (ThisDEMUnits == "feet") ToFCBuffer.set_Value(ElevMFieldIndex, 0.3048*ZValue);
                     if (ThisDEMUnits == "meters") ToFCBuffer.set_Value(ElevMFieldIndex, ZValue);
                 }
 
                 if (ElevFTFieldIndex > -1)
                 {
                     if (ThisDEMUnits == "feet") ToFCBuffer.set_Value(ElevFTFieldIndex, ZValue);
-                    if (ThisDEMUnits == "meters") ToFCBuffer.set_Value(ElevFTFieldIndex, ZValue * 3.2808399);
+                    if (ThisDEMUnits == "meters") ToFCBuffer.set_Value(ElevFTFieldIndex, ZValue*3.2808399);
                 }
 
 
@@ -2920,16 +2942,13 @@ namespace NPSTransectTool
 
             ToFCCursor = null;
             FromFCCursor = null;
-
-
         }
 
         /// <summary>
-        /// project a point the WGS coordinates
+        ///     project a point the WGS coordinates
         /// </summary>
         public static IPoint ProjectToWGS(IPoint ThisPoint)
         {
-
             ISpatialReference pSpRef1;
             SpatialReferenceEnvironment pSpRFc;
             IGeographicCoordinateSystem pGCS;
@@ -2952,7 +2971,7 @@ namespace NPSTransectTool
             }
 
             pSpRFc = new SpatialReferenceEnvironmentClass();
-            pGCS = pSpRFc.CreateGeographicCoordinateSystem((int)esriSRGeoCSType.esriSRGeoCS_WGS1984);
+            pGCS = pSpRFc.CreateGeographicCoordinateSystem((int) esriSRGeoCSType.esriSRGeoCS_WGS1984);
             pSpRef1 = pGCS;
             pSpRef1.SetFalseOriginAndUnits(-180, -90, 1000000);
 
@@ -2960,11 +2979,10 @@ namespace NPSTransectTool
             NewGeom.Project(pSpRef1);
 
             return NewGeom as IPoint;
-
         }
 
         /// <summary>
-        /// get the WGS spatial reference (lat/lng)
+        ///     get the WGS spatial reference (lat/lng)
         /// </summary>
         public static ISpatialReference GetWGSSpatRef()
         {
@@ -2973,7 +2991,7 @@ namespace NPSTransectTool
             IGeographicCoordinateSystem pGCS;
 
             pSpRFc = new SpatialReferenceEnvironmentClass();
-            pGCS = pSpRFc.CreateGeographicCoordinateSystem((int)esriSRGeoCSType.esriSRGeoCS_WGS1984);
+            pGCS = pSpRFc.CreateGeographicCoordinateSystem((int) esriSRGeoCSType.esriSRGeoCS_WGS1984);
             pSpRef1 = pGCS;
             pSpRef1.SetFalseOriginAndUnits(-180, -90, 1000000);
 
@@ -2981,7 +2999,7 @@ namespace NPSTransectTool
         }
 
         /// <summary>
-        /// build the DMLS string representation of a lat or lng in decimal degrees
+        ///     build the DMLS string representation of a lat or lng in decimal degrees
         /// </summary>
         public static string DDtoDMS(double coordinate, bool IsLng)
         {
@@ -3024,12 +3042,10 @@ namespace NPSTransectTool
         }
 
         /// <summary>
-        /// get the units of a dataset
+        ///     get the units of a dataset
         /// </summary>
         public static string GetDatasetUnits(IGeoDataset npsGeoDataset, ref string ErrorMessage)
         {
-
-
             ISpatialReference npsSpatialReference;
             IProjectedCoordinateSystem npsPrjCoordSys;
             IGeographicCoordinateSystem npsGeoCoordSys;
@@ -3039,7 +3055,6 @@ namespace NPSTransectTool
 
             try
             {
-
                 npsSpatialReference = npsGeoDataset.SpatialReference;
 
                 if (npsSpatialReference is IProjectedCoordinateSystem)
@@ -3056,10 +3071,6 @@ namespace NPSTransectTool
 
                 if (string.IsNullOrEmpty(UnitName))
                     ErrorMessage = "(Err) Units could not be obtained from dataset.";
-
-
-
-
             }
             catch (Exception ex)
             {
@@ -3070,10 +3081,10 @@ namespace NPSTransectTool
         }
 
         /// <summary>
-        /// generate points in the form of a grid over the span of the survey area of the specified survey
+        ///     generate points in the form of a grid over the span of the survey area of the specified survey
         /// </summary>
         public static int GenerateGridPoints(int SurveyID, double StartX, double StartY,
-            double PointSpacing, ref string ErrorMessage)
+                                             double PointSpacing, ref string ErrorMessage)
         {
             IPolygon BoundaryPoly;
             NPSGlobal NPS;
@@ -3088,43 +3099,43 @@ namespace NPSTransectTool
             NPS = NPSGlobal.Instance;
 
             //get the area polygon for this survey
-            BoundaryPoly = Util.GetSurveyBoundary(Convert.ToString(SurveyID), ref ErrorMessage);
+            BoundaryPoly = GetSurveyBoundary(Convert.ToString(SurveyID), ref ErrorMessage);
             if (string.IsNullOrEmpty(ErrorMessage) == false) return -1;
 
-            ExcludeFC = Util.GetFeatureClass(NPS.LYR_EXCLUDED_AREAS, ref ErrorMessage);
+            ExcludeFC = GetFeatureClass(NPS.LYR_EXCLUDED_AREAS, ref ErrorMessage);
             if (string.IsNullOrEmpty(ErrorMessage) == false) return -1;
 
-            RandPointsFC = Util.GetFeatureClass(NPS.LYR_RANDOMPOINTS, ref ErrorMessage);
+            RandPointsFC = GetFeatureClass(NPS.LYR_RANDOMPOINTS, ref ErrorMessage);
             if (string.IsNullOrEmpty(ErrorMessage) == false) return -1;
 
             SurveyIDFieldIndex = RandPointsFC.FindField("SurveyID");
             BatchIDFieldIndex = RandPointsFC.FindField("BATCH_ID");
 
             //get the next vailable batch id for this survey's grid points
-            NextBatcID = Util.GetHighestFieldValue(NPS.LYR_RANDOMPOINTS,
-                "BATCH_ID", "SurveyID=" + SurveyID, ref ErrorMessage);
+            NextBatcID = GetHighestFieldValue(NPS.LYR_RANDOMPOINTS,
+                                              "BATCH_ID", "SurveyID=" + SurveyID, ref ErrorMessage);
             if (string.IsNullOrEmpty(ErrorMessage) == false) return -1;
             NextBatcID++;
 
             if (StartX != -1 && StartY != -1)
             {
                 StartPoint = new PointClass();
-                StartPoint.SpatialReference = Util.GetDefaultSpatialReference();
+                StartPoint.SpatialReference = GetDefaultSpatialReference();
                 StartPoint.PutCoords(StartX, StartY);
 
-                if (((IRelationalOperator)BoundaryPoly).Contains(StartPoint) == false)
+                if (((IRelationalOperator) BoundaryPoly).Contains(StartPoint) == false)
                 {
                     ErrorMessage = "The starting point must be within the survey boundary area.";
                     return -1;
                 }
 
-                NewPoints = Util.GenerateGridPointsFromCenter(StartPoint, BoundaryPoly.Envelope,
-                    PointSpacing, ref GridPointTotal, ref ErrorMessage);
+                NewPoints = GenerateGridPointsFromCenter(StartPoint, BoundaryPoly.Envelope,
+                                                         PointSpacing, ref GridPointTotal, ref ErrorMessage);
             }
             else
             {
-                NewPoints = Util.GenerateGridPointsFromEnve(BoundaryPoly.Envelope, PointSpacing,
-                    ref GridPointTotal, ref ErrorMessage);
+                NewPoints = GenerateGridPointsFromEnve(BoundaryPoly.Envelope, PointSpacing,
+                                                       ref GridPointTotal, ref ErrorMessage);
             }
 
             if (string.IsNullOrEmpty(ErrorMessage) == false) return -1;
@@ -3137,14 +3148,14 @@ namespace NPSTransectTool
             {
                 IPoint NewPoint = NewPoints[GridPointIndex];
 
-                if (((IRelationalOperator)BoundaryPoly).Contains(NewPoint) == false) continue;
+                if (((IRelationalOperator) BoundaryPoly).Contains(NewPoint) == false) continue;
 
 
-                if (Util.HasRelationshipWithFC(NewPoint, esriSpatialRelEnum.esriSpatialRelWithin, ExcludeFC,
-                   "SurveyID=" + SurveyID) == true)
+                if (HasRelationshipWithFC(NewPoint, esriSpatialRelEnum.esriSpatialRelWithin, ExcludeFC,
+                                          "SurveyID=" + SurveyID))
                     continue;
 
-                InsertBuffer.Shape = ((ESRI.ArcGIS.esriSystem.IClone)NewPoint).Clone() as IPoint;
+                InsertBuffer.Shape = ((IClone) NewPoint).Clone() as IPoint;
                 InsertBuffer.set_Value(SurveyIDFieldIndex, SurveyID);
                 InsertBuffer.set_Value(BatchIDFieldIndex, NextBatcID);
 
@@ -3156,12 +3167,12 @@ namespace NPSTransectTool
         }
 
         /// <summary>
-        /// generate grid points form envelope
+        ///     generate grid points form envelope
         /// </summary>
         public static IPoint[] GenerateGridPointsFromEnve(IEnvelope Boundary,
-            double PointSpacing, ref int GridPointIndex, ref string ErrorMessage)
+                                                          double PointSpacing, ref int GridPointIndex,
+                                                          ref string ErrorMessage)
         {
-
             double upperboundx, lowerboundx, upperboundy, lowerboundy, IncrementX, IncrementY;
             IRelationalOperator npsRelOperator;
             IPoint npsPointTest;
@@ -3189,10 +3200,8 @@ namespace NPSTransectTool
             //loops until the number of valid points reach requested total points
             while (Counter < 10000000)
             {
-
                 if (IncrementX > upperboundx)
                 {
-
                     if (IncrementY < lowerboundy) break;
 
                     IncrementY = IncrementY - PointSpacing;
@@ -3226,12 +3235,12 @@ namespace NPSTransectTool
         }
 
         /// <summary>
-        /// generate grid points starting from the specified center point
+        ///     generate grid points starting from the specified center point
         /// </summary>
         public static IPoint[] GenerateGridPointsFromCenter(IPoint centerPoint, IEnvelope Boundary,
-            double Spacing, ref int GridPointIndex, ref string ErrorMessage)
+                                                            double Spacing, ref int GridPointIndex,
+                                                            ref string ErrorMessage)
         {
-
             int PntPerPhase, Unreachable, Counter = 1, PointPerPhaseCount = 1;
             double DistFromStart;
             bool GoRoundAgain = true;
@@ -3256,8 +3265,6 @@ namespace NPSTransectTool
             //each cycle to continuously move outward
             for (Counter = 1; Counter <= Unreachable; Counter++)
             {
-
-
                 //create point directly below center point to begin cycle
                 NewPoint = new PointClass();
                 NewPoint.X = centerPoint.X;
@@ -3269,72 +3276,65 @@ namespace NPSTransectTool
                 //add points moving right
                 for (PointPerPhaseCount = 1; PointPerPhaseCount <= PntPerPhase; PointPerPhaseCount++)
                 {
-
                     OtherPoint = new PointClass();
-                    OtherPoint.X = NewPoint.X + (Spacing * PointPerPhaseCount);
+                    OtherPoint.X = NewPoint.X + (Spacing*PointPerPhaseCount);
                     OtherPoint.Y = NewPoint.Y;
                     ThesePoints[GridPointIndex] = OtherPoint;
                     GridPointIndex++;
 
-                    if (GoRoundAgain == false) GoRoundAgain = ((IRelationalOperator)Boundary).Contains(OtherPoint);
-
-
+                    if (GoRoundAgain == false) GoRoundAgain = ((IRelationalOperator) Boundary).Contains(OtherPoint);
                 }
                 NewPoint = OtherPoint;
 
 
                 //add points moving up
-                for (PointPerPhaseCount = 1; PointPerPhaseCount <= (PntPerPhase * 2); PointPerPhaseCount++)
+                for (PointPerPhaseCount = 1; PointPerPhaseCount <= (PntPerPhase*2); PointPerPhaseCount++)
                 {
-
                     OtherPoint = new PointClass();
                     OtherPoint.X = NewPoint.X;
-                    OtherPoint.Y = NewPoint.Y + (Spacing * PointPerPhaseCount);
+                    OtherPoint.Y = NewPoint.Y + (Spacing*PointPerPhaseCount);
                     ThesePoints[GridPointIndex] = OtherPoint;
                     GridPointIndex++;
 
-                    if (GoRoundAgain == false) GoRoundAgain = ((IRelationalOperator)Boundary).Contains(OtherPoint);
+                    if (GoRoundAgain == false) GoRoundAgain = ((IRelationalOperator) Boundary).Contains(OtherPoint);
                 }
                 NewPoint = OtherPoint;
 
                 //add points moving left
-                for (PointPerPhaseCount = 1; PointPerPhaseCount <= (PntPerPhase * 2); PointPerPhaseCount++)
+                for (PointPerPhaseCount = 1; PointPerPhaseCount <= (PntPerPhase*2); PointPerPhaseCount++)
                 {
-
                     OtherPoint = new PointClass();
-                    OtherPoint.X = NewPoint.X - (Spacing * PointPerPhaseCount);
+                    OtherPoint.X = NewPoint.X - (Spacing*PointPerPhaseCount);
                     OtherPoint.Y = NewPoint.Y;
                     ThesePoints[GridPointIndex] = OtherPoint;
                     GridPointIndex++;
 
-                    if (GoRoundAgain == false) GoRoundAgain = ((IRelationalOperator)Boundary).Contains(OtherPoint);
+                    if (GoRoundAgain == false) GoRoundAgain = ((IRelationalOperator) Boundary).Contains(OtherPoint);
                 }
                 NewPoint = OtherPoint;
 
                 //add points moving down
-                for (PointPerPhaseCount = 1; PointPerPhaseCount <= (PntPerPhase * 2); PointPerPhaseCount++)
+                for (PointPerPhaseCount = 1; PointPerPhaseCount <= (PntPerPhase*2); PointPerPhaseCount++)
                 {
-
                     OtherPoint = new PointClass();
                     OtherPoint.X = NewPoint.X;
-                    OtherPoint.Y = NewPoint.Y - (Spacing * PointPerPhaseCount);
+                    OtherPoint.Y = NewPoint.Y - (Spacing*PointPerPhaseCount);
                     ThesePoints[GridPointIndex] = OtherPoint;
 
-                    if (GoRoundAgain == false) GoRoundAgain = ((IRelationalOperator)Boundary).Contains(OtherPoint);
+                    if (GoRoundAgain == false) GoRoundAgain = ((IRelationalOperator) Boundary).Contains(OtherPoint);
                 }
                 NewPoint = OtherPoint;
 
                 //add points moving right (back to origin)
                 for (PointPerPhaseCount = 1; PointPerPhaseCount <= (PntPerPhase - 1); PointPerPhaseCount++)
                 {
-
                     OtherPoint = new PointClass();
-                    OtherPoint.X = NewPoint.X + (Spacing * PointPerPhaseCount);
+                    OtherPoint.X = NewPoint.X + (Spacing*PointPerPhaseCount);
                     OtherPoint.Y = NewPoint.Y;
                     ThesePoints[GridPointIndex] = OtherPoint;
                     GridPointIndex++;
 
-                    if (GoRoundAgain == false) GoRoundAgain = ((IRelationalOperator)Boundary).Contains(OtherPoint);
+                    if (GoRoundAgain == false) GoRoundAgain = ((IRelationalOperator) Boundary).Contains(OtherPoint);
                 }
                 NewPoint = OtherPoint;
 
@@ -3346,19 +3346,17 @@ namespace NPSTransectTool
 
                 PntPerPhase = PntPerPhase + 1;
                 DistFromStart = DistFromStart + Spacing;
-
             }
 
             return ThesePoints;
         }
 
         /// <summary>
-        /// check if a shape has the specified relationship with any features in the specified feature class
+        ///     check if a shape has the specified relationship with any features in the specified feature class
         /// </summary>
         public static bool HasRelationshipWithFC(IGeometry GeomToCheck, esriSpatialRelEnum SpatRel,
-            IFeatureClass FeatureClassToSearchIn, string WhereClause)
+                                                 IFeatureClass FeatureClassToSearchIn, string WhereClause)
         {
-
             ISpatialFilter ThisSpatialFilter;
             IFeatureCursor ThisFeatureCursor;
             IFeature CheckFeature;
@@ -3385,20 +3383,19 @@ namespace NPSTransectTool
             CheckFeature = null;
 
             return DoesRelate;
-
         }
 
         /// <summary>
-        /// get a random number between the specified range
+        ///     get a random number between the specified range
         /// </summary>
         public static double GetRandomNumber()
         {
-            return Convert.ToDouble(NPSGlobal.Instance.Randomizer.Next(0, 100)) / 100.0f;
+            return Convert.ToDouble(NPSGlobal.Instance.Randomizer.Next(0, 100))/100.0f;
         }
 
         /// <summary>
-        /// used by the GenerateFlatAreas and GenerateExcludedAreas logic to add in at least one polygon if their
-        /// processes result in zero polygons being generated
+        ///     used by the GenerateFlatAreas and GenerateExcludedAreas logic to add in at least one polygon if their
+        ///     processes result in zero polygons being generated
         /// </summary>
         public static void CreateFillerPolygon(IFeatureClass ThisFeatureClass, int SurveyID, ref string ErrorMessage)
         {
@@ -3414,18 +3411,19 @@ namespace NPSTransectTool
             SurveyIDIndex = ThisFeatureClass.FindField("SurveyID");
             if (SurveyIDIndex == -1)
             {
-                ErrorMessage = "Could not find SurveyID field in " + ((IDataset)ThisFeatureClass).Name + " FeatureClass.";
+                ErrorMessage = "Could not find SurveyID field in " + ((IDataset) ThisFeatureClass).Name +
+                               " FeatureClass.";
                 return;
             }
 
             if (ThisFeatureClass.FeatureCount(ThisQueryFilter) > 0) return;
 
-            BoundarPoly = Util.GetSurveyBoundary(Convert.ToString(SurveyID), ref ErrorMessage);
+            BoundarPoly = GetSurveyBoundary(Convert.ToString(SurveyID), ref ErrorMessage);
             if (string.IsNullOrEmpty(ErrorMessage) == false) return;
 
             try
             {
-                BoundarPoly = Util.EnvelopeToPolygon(BoundarPoly.Envelope.UpperLeft.Envelope);
+                BoundarPoly = EnvelopeToPolygon(BoundarPoly.Envelope.UpperLeft.Envelope);
 
                 ThisFCursor = ThisFeatureClass.Insert(true);
                 ThisFBuffer = ThisFeatureClass.CreateFeatureBuffer();
@@ -3438,23 +3436,22 @@ namespace NPSTransectTool
             catch (Exception ex)
             {
                 ErrorMessage = "Error occured while inserting filler shape for "
-                    + ((IDataset)ThisFeatureClass).Name + " FeatureClass. " + ex.Message;
+                               + ((IDataset) ThisFeatureClass).Name + " FeatureClass. " + ex.Message;
             }
 
             ThisFCursor = null;
-
         }
 
         /// <summary>
-        /// clips one feature class by another and returns the resulting feature class. the resulting featureclass
-        /// is a temp feature class and will need to be deleted after it's features have been processed
+        ///     clips one feature class by another and returns the resulting feature class. the resulting featureclass
+        ///     is a temp feature class and will need to be deleted after it's features have been processed
         /// </summary>
         public static IFeatureClass GP_Clip_analysis(string TempClipFCName, IFeatureClass InputFC,
-            IFeatureClass ClipFC, ref string ErrorMessage)
+                                                     IFeatureClass ClipFC, ref string ErrorMessage)
         {
-            ESRI.ArcGIS.esriSystem.IVariantArray GPParams;
-            ESRI.ArcGIS.Geoprocessing.IGeoProcessor ThisGeoProcessor = null;
-            ESRI.ArcGIS.Geoprocessing.IGeoProcessorResult GeoResult = null;
+            IVariantArray GPParams;
+            IGeoProcessor ThisGeoProcessor = null;
+            IGeoProcessorResult GeoResult = null;
             IFeatureClass TempClipFC = null;
             NPSGlobal NPS;
 
@@ -3463,25 +3460,25 @@ namespace NPSTransectTool
 
             try
             {
-
-                ThisGeoProcessor = new ESRI.ArcGIS.Geoprocessing.GeoProcessor();
-                GPParams = new ESRI.ArcGIS.esriSystem.VarArrayClass();
+                ThisGeoProcessor = new GeoProcessor();
+                GPParams = new VarArrayClass();
 
                 GPParams.Add(InputFC);
                 GPParams.Add(ClipFC);
-                GPParams.Add(System.IO.Path.Combine(NPS.DatabasePath, TempClipFCName));
+                GPParams.Add(Path.Combine(NPS.DatabasePath, TempClipFCName));
 
                 GeoResult = ThisGeoProcessor.Execute("Clip_analysis", GPParams, null);
 
-                Util.DeleteLayerFromMap(TempClipFCName);
+                DeleteLayerFromMap(TempClipFCName);
 
-                TempClipFC = Util.GetFeatureClass(TempClipFCName, ref ErrorMessage);
+                TempClipFC = GetFeatureClass(TempClipFCName, ref ErrorMessage);
             }
             catch (Exception ex)
             {
                 ErrorMessage = string.Format("Geoprocessor error:\r\nTask:Clip_analysis\r\n"
-                    + "Params:{0},{1},{2}\r\nException:{3}", ((IDataset)InputFC).Name, ((IDataset)ClipFC).Name,
-                    System.IO.Path.Combine(NPS.DatabasePath, TempClipFCName), ex.Message);
+                                             + "Params:{0},{1},{2}\r\nException:{3}", ((IDataset) InputFC).Name,
+                                             ((IDataset) ClipFC).Name,
+                                             Path.Combine(NPS.DatabasePath, TempClipFCName), ex.Message);
                 ThisGeoProcessor = null;
                 return null;
             }
@@ -3492,14 +3489,14 @@ namespace NPSTransectTool
         }
 
         /// <summary>
-        /// create a new feature class with buffer polygons of the input feature class
+        ///     create a new feature class with buffer polygons of the input feature class
         /// </summary>
         public static IFeatureClass GP_Buffer_analysis(IFeatureClass FCToBuffer, string OutFCPathAndName,
-            double BufferDistance, string BufferSide, ref string ErrorMessage)
+                                                       double BufferDistance, string BufferSide, ref string ErrorMessage)
         {
-            ESRI.ArcGIS.esriSystem.IVariantArray GPParams;
-            ESRI.ArcGIS.Geoprocessing.IGeoProcessor ThisGeoProcessor = null;
-            ESRI.ArcGIS.Geoprocessing.IGeoProcessorResult GeoResult = null;
+            IVariantArray GPParams;
+            IGeoProcessor ThisGeoProcessor = null;
+            IGeoProcessorResult GeoResult = null;
             IFeatureClass ResultsFC = null;
             NPSGlobal NPS;
             string FCName;
@@ -3509,9 +3506,8 @@ namespace NPSTransectTool
 
             try
             {
-
-                ThisGeoProcessor = new ESRI.ArcGIS.Geoprocessing.GeoProcessor();
-                GPParams = new ESRI.ArcGIS.esriSystem.VarArrayClass();
+                ThisGeoProcessor = new GeoProcessor();
+                GPParams = new VarArrayClass();
 
                 GPParams.Add(FCToBuffer);
                 GPParams.Add(OutFCPathAndName);
@@ -3523,17 +3519,17 @@ namespace NPSTransectTool
                 GeoResult = ThisGeoProcessor.Execute("Buffer_analysis", GPParams, null);
 
 
-
                 FCName = OutFCPathAndName.Substring(OutFCPathAndName.LastIndexOf("\\") + 1);
-                ResultsFC = Util.GetFeatureClass(FCName, ref ErrorMessage);
+                ResultsFC = GetFeatureClass(FCName, ref ErrorMessage);
 
-                Util.DeleteLayerFromMap(FCName);
+                DeleteLayerFromMap(FCName);
             }
             catch (Exception ex)
             {
                 ErrorMessage = string.Format("Geoprocessor error:\r\nTask:Buffer_analysis\r\n"
-                    + "Params:{0},{1},{2},{3},{4}\r\nException:{5}", ((IDataset)FCToBuffer).Name,
-                    OutFCPathAndName, BufferDistance, BufferSide, "NONE", ex.Message);
+                                             + "Params:{0},{1},{2},{3},{4}\r\nException:{5}",
+                                             ((IDataset) FCToBuffer).Name,
+                                             OutFCPathAndName, BufferDistance, BufferSide, "NONE", ex.Message);
                 ThisGeoProcessor = null;
                 return null;
             }
@@ -3544,14 +3540,14 @@ namespace NPSTransectTool
         }
 
         /// <summary>
-        /// create a new feature class with buffer polygons of the input feature class
+        ///     create a new feature class with buffer polygons of the input feature class
         /// </summary>
         public static IFeatureClass GP_Union_analysis(IFeatureClass FirstFC, IFeatureClass SecondFC,
-            string OutFCPathAndName, ref string ErrorMessage)
+                                                      string OutFCPathAndName, ref string ErrorMessage)
         {
-            ESRI.ArcGIS.esriSystem.IVariantArray GPParams;
-            ESRI.ArcGIS.Geoprocessing.IGeoProcessor ThisGeoProcessor = null;
-            ESRI.ArcGIS.Geoprocessing.IGeoProcessorResult GeoResult = null;
+            IVariantArray GPParams;
+            IGeoProcessor ThisGeoProcessor = null;
+            IGeoProcessorResult GeoResult = null;
             IFeatureClass ResultsFC = null;
             NPSGlobal NPS;
             string FCName, FCList;
@@ -3561,14 +3557,13 @@ namespace NPSTransectTool
 
             try
             {
+                ThisGeoProcessor = new GeoProcessor();
+                GPParams = new VarArrayClass();
 
-                ThisGeoProcessor = new ESRI.ArcGIS.Geoprocessing.GeoProcessor();
-                GPParams = new ESRI.ArcGIS.esriSystem.VarArrayClass();
+                FCList = ((IDataset) FirstFC).FullName + ";" + ((IDataset) SecondFC).FullName;
 
-                FCList = ((IDataset)FirstFC).FullName + ";" + ((IDataset)SecondFC).FullName;
-
-                FCList = System.IO.Path.Combine(((IDataset)FirstFC).Workspace.PathName, ((IDataset)FirstFC).Name)
-                    + ";" + System.IO.Path.Combine(((IDataset)FirstFC).Workspace.PathName, ((IDataset)SecondFC).Name);
+                FCList = Path.Combine(((IDataset) FirstFC).Workspace.PathName, ((IDataset) FirstFC).Name)
+                         + ";" + Path.Combine(((IDataset) FirstFC).Workspace.PathName, ((IDataset) SecondFC).Name);
 
                 GPParams.Add(FCList);
                 GPParams.Add(OutFCPathAndName);
@@ -3577,17 +3572,16 @@ namespace NPSTransectTool
                 GeoResult = ThisGeoProcessor.Execute("Union_analysis", GPParams, null);
 
 
-
                 FCName = OutFCPathAndName.Substring(OutFCPathAndName.LastIndexOf("\\") + 1);
-                ResultsFC = Util.GetFeatureClass(FCName, ref ErrorMessage);
+                ResultsFC = GetFeatureClass(FCName, ref ErrorMessage);
 
-                Util.DeleteLayerFromMap(FCName);
+                DeleteLayerFromMap(FCName);
             }
             catch (Exception ex)
             {
                 ErrorMessage = string.Format("Geoprocessor error:\r\nTask:Union_analysis\r\n"
-                    + "Params:{0},{1},{2},{3}\r\nException:{4}", ((IDataset)FirstFC).Name,
-                    ((IDataset)SecondFC).Name, OutFCPathAndName, "ALL", ex.Message);
+                                             + "Params:{0},{1},{2},{3}\r\nException:{4}", ((IDataset) FirstFC).Name,
+                                             ((IDataset) SecondFC).Name, OutFCPathAndName, "ALL", ex.Message);
                 ThisGeoProcessor = null;
                 return null;
             }
@@ -3599,9 +3593,9 @@ namespace NPSTransectTool
 
         public static void ExecuteGP(string GPToolName, List<object> Params, ref string ErrorMessage)
         {
-            ESRI.ArcGIS.esriSystem.IVariantArray GPParams;
-            ESRI.ArcGIS.Geoprocessing.IGeoProcessor ThisGeoProcessor = null;
-            ESRI.ArcGIS.Geoprocessing.IGeoProcessorResult GeoResult = null;
+            IVariantArray GPParams;
+            IGeoProcessor ThisGeoProcessor = null;
+            IGeoProcessorResult GeoResult = null;
             NPSGlobal NPS;
 
 
@@ -3610,35 +3604,31 @@ namespace NPSTransectTool
 
             try
             {
-
-                ThisGeoProcessor = new ESRI.ArcGIS.Geoprocessing.GeoProcessor();
-                GPParams = new ESRI.ArcGIS.esriSystem.VarArrayClass();
+                ThisGeoProcessor = new GeoProcessor();
+                GPParams = new VarArrayClass();
 
                 foreach (object ThisParam in Params)
                     GPParams.Add(ThisParam);
 
 
                 GeoResult = ThisGeoProcessor.Execute(GPToolName, GPParams, null);
-
-
             }
             catch
             {
-
             }
 
             ThisGeoProcessor = null;
         }
 
         /// <summary>
-        /// export a featureclass as a shapefile
+        ///     export a featureclass as a shapefile
         /// </summary>
         public static void GP_FeatureclassToShapefile_conversion(IFeatureClass ThisFC, string ShapeFileFolderPath,
-            string WhereClause, ref string ErrorMessage)
+                                                                 string WhereClause, ref string ErrorMessage)
         {
-            ESRI.ArcGIS.esriSystem.IVariantArray GPParams;
-            ESRI.ArcGIS.Geoprocessing.IGeoProcessor ThisGeoProcessor = null;
-            ESRI.ArcGIS.Geoprocessing.IGeoProcessorResult GeoResult = null;
+            IVariantArray GPParams;
+            IGeoProcessor ThisGeoProcessor = null;
+            IGeoProcessorResult GeoResult = null;
             IFeatureLayer TempLayer = null;
             NPSGlobal NPS;
 
@@ -3647,14 +3637,13 @@ namespace NPSTransectTool
 
             try
             {
-
-                ThisGeoProcessor = new ESRI.ArcGIS.Geoprocessing.GeoProcessor();
-                GPParams = new ESRI.ArcGIS.esriSystem.VarArrayClass();
+                ThisGeoProcessor = new GeoProcessor();
+                GPParams = new VarArrayClass();
 
                 TempLayer = new FeatureLayerClass();
                 TempLayer.FeatureClass = ThisFC;
-                ((ITableDefinition)TempLayer).DefinitionExpression = WhereClause;
-                TempLayer.Name = ((IDataset)ThisFC).Name;
+                ((ITableDefinition) TempLayer).DefinitionExpression = WhereClause;
+                TempLayer.Name = ((IDataset) ThisFC).Name;
 
                 GPParams.Add(TempLayer);
                 GPParams.Add(ShapeFileFolderPath);
@@ -3664,24 +3653,24 @@ namespace NPSTransectTool
             catch (Exception ex)
             {
                 ErrorMessage = string.Format("Geoprocessor error:\r\nTask:Clip_analysis\r\n"
-                    + "Params:{0},{1}\r\nException:{2}", ((IDataset)ThisFC).Name, ShapeFileFolderPath, ex.Message);
+                                             + "Params:{0},{1}\r\nException:{2}", ((IDataset) ThisFC).Name,
+                                             ShapeFileFolderPath, ex.Message);
             }
 
             ThisGeoProcessor = null;
-
         }
 
         /// <summary>
-        /// try to delete a folder and if we can't delete it, try to empty it out for resuse
+        ///     try to delete a folder and if we can't delete it, try to empty it out for resuse
         /// </summary>
-        public static void DeleteOrEmptyFolder(string FolderPath, bool TryEmptying, ref bool IsReusing, ref string ErrorMessage)
+        public static void DeleteOrEmptyFolder(string FolderPath, bool TryEmptying, ref bool IsReusing,
+                                               ref string ErrorMessage)
         {
-
             IsReusing = false;
 
             try
             {
-                System.IO.Directory.Delete(FolderPath, true);
+                Directory.Delete(FolderPath, true);
             }
             catch (Exception ex)
             {
@@ -3689,14 +3678,15 @@ namespace NPSTransectTool
                 {
                     try
                     {
-                        foreach (string FilePath in System.IO.Directory.GetFiles(FolderPath))
+                        foreach (string FilePath in Directory.GetFiles(FolderPath))
                         {
-                            System.IO.File.Delete(FilePath);
+                            File.Delete(FilePath);
                         }
                     }
                     catch (Exception ex2)
                     {
-                        ErrorMessage = "Could not remove existing Survey folder at path " + FolderPath + ". " + ex2.Message;
+                        ErrorMessage = "Could not remove existing Survey folder at path " + FolderPath + ". " +
+                                       ex2.Message;
                         return;
                     }
                     IsReusing = true;
@@ -3709,13 +3699,13 @@ namespace NPSTransectTool
         }
 
         /// <summary>
-        /// try creating a folder
+        ///     try creating a folder
         /// </summary>
         public static void CreateDirectory(string FolderPath, ref string ErrorMessage)
         {
             try
             {
-                System.IO.Directory.CreateDirectory(FolderPath);
+                Directory.CreateDirectory(FolderPath);
             }
             catch (Exception ex)
             {
@@ -3724,7 +3714,7 @@ namespace NPSTransectTool
         }
 
         /// <summary>
-        /// recursively copy a folder to a specified destination folder
+        ///     recursively copy a folder to a specified destination folder
         /// </summary>
         public static void CopyFolder(string SourceFolder, string DestinationFolder, ref string ErrorMessage)
         {
@@ -3733,47 +3723,47 @@ namespace NPSTransectTool
 
             if (SourceFolder == DestinationFolder) return;
 
-            if (System.IO.Directory.Exists(DestinationFolder) == false)
-                Util.CreateDirectory(DestinationFolder, ref ErrorMessage);
+            if (Directory.Exists(DestinationFolder) == false)
+                CreateDirectory(DestinationFolder, ref ErrorMessage);
 
             if (string.IsNullOrEmpty(ErrorMessage) == false) return;
 
-            files = System.IO.Directory.GetFiles(SourceFolder);
+            files = Directory.GetFiles(SourceFolder);
             foreach (string file in files)
             {
-                string name = System.IO.Path.GetFileName(file);
-                string dest = System.IO.Path.Combine(DestinationFolder, name);
-                Util.CopyFile(file, dest, ref LocalError);
+                string name = Path.GetFileName(file);
+                string dest = Path.Combine(DestinationFolder, name);
+                CopyFile(file, dest, ref LocalError);
             }
 
-            folders = System.IO.Directory.GetDirectories(SourceFolder);
+            folders = Directory.GetDirectories(SourceFolder);
             foreach (string folder in folders)
             {
-                if (System.IO.Path.GetFileName(folder) == ".svn") continue;
-                string name = System.IO.Path.GetFileName(folder);
-                string dest = System.IO.Path.Combine(DestinationFolder, name);
-                Util.CopyFolder(folder, dest, ref ErrorMessage);
+                if (Path.GetFileName(folder) == ".svn") continue;
+                string name = Path.GetFileName(folder);
+                string dest = Path.Combine(DestinationFolder, name);
+                CopyFolder(folder, dest, ref ErrorMessage);
             }
         }
 
         /// <summary>
-        /// copy a file from one folder to the next, overrides a file if it already exists in the desitnation folder
+        ///     copy a file from one folder to the next, overrides a file if it already exists in the desitnation folder
         /// </summary>
         public static void CopyFile(string FilePath, string DestinationFolder, ref string ErrorMessage)
         {
             try
             {
-                System.IO.File.Copy(FilePath, DestinationFolder, true);
+                File.Copy(FilePath, DestinationFolder, true);
             }
             catch (Exception ex)
             {
                 ErrorMessage = "Error occured while copying file "
-                    + FilePath + " to destination " + DestinationFolder + ". " + ex.Message;
+                               + FilePath + " to destination " + DestinationFolder + ". " + ex.Message;
             }
         }
 
         /// <summary>
-        /// make sure the Survey folder is valid for import by the ArcMap extension
+        ///     make sure the Survey folder is valid for import by the ArcMap extension
         /// </summary>
         public static IWorkspace ValidateSurveyFolder(string SurveyFolderPath, ref string ErrorMessage)
         {
@@ -3784,25 +3774,28 @@ namespace NPSTransectTool
             NPS = NPSGlobal.Instance;
 
             //get the survey folder path and validate it
-            SurveyFolderPath = System.IO.Path.Combine(SurveyFolderPath, "Survey");
-            if (System.IO.Directory.Exists(SurveyFolderPath) == false)
+            SurveyFolderPath = Path.Combine(SurveyFolderPath, "Survey");
+            if (Directory.Exists(SurveyFolderPath) == false)
             {
                 ErrorMessage = "There is no Survey folder at the specified path: " + SurveyFolderPath;
                 return null;
             }
 
             //make sure this is a valid shapefile workspace
-            ShapeFileWS = Util.OpenShapeFileWorkspace(SurveyFolderPath, ref ErrorMessage);
+            ShapeFileWS = OpenShapeFileWorkspace(SurveyFolderPath, ref ErrorMessage);
             if (string.IsNullOrEmpty(ErrorMessage) == false) return null;
 
-            NPSFCNames = new string[]{NPS.LYR_GENERATED_TRANSECTS,NPS.LYR_ANIMALS,
-                                     NPS.LYR_TRACKLOG,NPS.LYR_HORIZON,NPS.LYR_GPSPOINTLOG};
+            NPSFCNames = new[]
+                {
+                    NPS.LYR_GENERATED_TRANSECTS, NPS.LYR_ANIMALS,
+                    NPS.LYR_TRACKLOG, NPS.LYR_HORIZON, NPS.LYR_GPSPOINTLOG
+                };
 
 
             //make sure that each feature class is present in the survey folder
             foreach (string FCName in NPSFCNames)
             {
-                CurShapeFile = Util.GetFeatureClass(FCName, ShapeFileWS, ref ErrorMessage);
+                CurShapeFile = GetFeatureClass(FCName, ShapeFileWS, ref ErrorMessage);
                 if (string.IsNullOrEmpty(ErrorMessage) == false)
                 {
                     ErrorMessage = "The survey folder is missing a Shapefile. " + ErrorMessage;
@@ -3814,7 +3807,7 @@ namespace NPSTransectTool
         }
 
         /// <summary>
-        /// check if the featureclass is empty
+        ///     check if the featureclass is empty
         /// </summary>
         public static bool HasRecordsOf(IFeatureClass ThisFC, string WhereClause)
         {
@@ -3840,23 +3833,25 @@ namespace NPSTransectTool
 
             return HasRecords;
         }
+
         public static bool HasRecordsOf(string FCName, IWorkspace ThisWS, string WhereClause)
         {
             IFeatureClass ThisFC;
             string ErrorMessage = "";
 
-            ThisFC = Util.GetFeatureClass(FCName, ThisWS, ref ErrorMessage);
+            ThisFC = GetFeatureClass(FCName, ThisWS, ref ErrorMessage);
             if (ErrorMessage != "") return false;
 
             return HasRecordsOf(ThisFC, WhereClause);
         }
+
         public static bool HasRecordsOf(string FCName, string WherehClause)
         {
-            return Util.HasRecordsOf(FCName, NPSGlobal.Instance.Workspace, WherehClause);
+            return HasRecordsOf(FCName, NPSGlobal.Instance.Workspace, WherehClause);
         }
 
         /// <summary>
-        /// count the number of features in a feature class
+        ///     count the number of features in a feature class
         /// </summary>
         public static int FeatureCount(IFeatureClass ThisFC, string WhereClause)
         {
@@ -3877,26 +3872,27 @@ namespace NPSTransectTool
         }
 
         /// <summary>
-        /// count the number of features in a feature class
+        ///     count the number of features in a feature class
         /// </summary>
         public static int FeatureCount(string FCName, IWorkspace ThisWS, string WhereClause)
         {
             IFeatureClass ThisFC;
             string ErrorMessage = "";
 
-            ThisFC = Util.GetFeatureClass(FCName, ThisWS, ref ErrorMessage);
+            ThisFC = GetFeatureClass(FCName, ThisWS, ref ErrorMessage);
             if (ErrorMessage != "") return -1;
 
             return FeatureCount(ThisFC, WhereClause);
         }
+
         public static int FeatureCount(string FCName, string WhereClause)
         {
             return FeatureCount(FCName, NPSGlobal.Instance.Workspace, WhereClause);
         }
 
         /// <summary>
-        /// specific logic for copying over gps points from the Survey folder's gps log into the
-        /// database gps log
+        ///     specific logic for copying over gps points from the Survey folder's gps log into the
+        ///     database gps log
         /// </summary>
         public static void CopyGPSPointLog(IFeatureClass NewGPSPointsFC, ref string ErrorMessage)
         {
@@ -3904,15 +3900,20 @@ namespace NPSTransectTool
             IFeatureBuffer ToFCBuffer;
             IFeature FromFCFeature;
             IFeatureClass GPSPointsFC;
-            int FromFieldTotal = 0, FromFieldCount = 0, CurrentFieldIndex = 0,
-                SurveyID = 0, PilotLNamIndex = 0, AircraftIndex = 0, SurveyIDIndex = 0;
+            int FromFieldTotal = 0,
+                FromFieldCount = 0,
+                CurrentFieldIndex = 0,
+                SurveyID = 0,
+                PilotLNamIndex = 0,
+                AircraftIndex = 0,
+                SurveyIDIndex = 0;
             string PilotLNam = "", Aircraft = "";
             NPSGlobal NPS;
 
 
             NPS = NPSGlobal.Instance;
 
-            GPSPointsFC = Util.GetFeatureClass(NPS.LYR_GPSPOINTLOG, ref ErrorMessage);
+            GPSPointsFC = GetFeatureClass(NPS.LYR_GPSPOINTLOG, ref ErrorMessage);
 
             SurveyIDIndex = NewGPSPointsFC.FindField("SurveyID");
             AircraftIndex = NewGPSPointsFC.FindField("Aircraft");
@@ -3923,9 +3924,9 @@ namespace NPSTransectTool
 
             while ((FromFCFeature = FromFCCursor.NextFeature()) != null)
             {
-                SurveyID = (int)Util.SafeConvert(FromFCFeature.get_Value(SurveyIDIndex), typeof(int));
-                PilotLNam = (string)Util.SafeConvert(FromFCFeature.get_Value(PilotLNamIndex), typeof(string));
-                Aircraft = (string)Util.SafeConvert(FromFCFeature.get_Value(AircraftIndex), typeof(string));
+                SurveyID = (int) SafeConvert(FromFCFeature.get_Value(SurveyIDIndex), typeof (int));
+                PilotLNam = (string) SafeConvert(FromFCFeature.get_Value(PilotLNamIndex), typeof (string));
+                Aircraft = (string) SafeConvert(FromFCFeature.get_Value(AircraftIndex), typeof (string));
                 if (SurveyID > -1 && Aircraft != "" && PilotLNam != "") break;
             }
             FromFCCursor = null;
@@ -3968,7 +3969,6 @@ namespace NPSTransectTool
                     ToFCBuffer.set_Value(ToFCBuffer.Fields.FindField("AIRCRAFT"), Aircraft);
 
                 ToFCCursor.InsertFeature(ToFCBuffer);
-
             }
 
             ToFCCursor = null;
@@ -3976,7 +3976,7 @@ namespace NPSTransectTool
         }
 
         /// <summary>
-        /// get the first valid value from the first row at the specified column
+        ///     get the first valid value from the first row at the specified column
         /// </summary>
         public static string GetFirstRecordValue(IFeatureClass ThisFC, string FieldName, string WhereClause)
         {
@@ -3997,27 +3997,28 @@ namespace NPSTransectTool
 
             while ((ThisFeature = ThisFCursor.NextFeature()) != null)
             {
-                FirstValidValue = (string)Util.SafeConvert(ThisFeature.get_Value(FieldIndex), typeof(string));
+                FirstValidValue = (string) SafeConvert(ThisFeature.get_Value(FieldIndex), typeof (string));
                 if (string.IsNullOrEmpty(FirstValidValue) == false) break;
             }
             ThisFCursor = null;
 
             return FirstValidValue;
         }
+
         public static string GetFirstRecordValue(string LocalFCName, string FieldName, string WhereClause)
         {
             string ErrorMessage = "";
 
             IFeatureClass ThisFC;
 
-            ThisFC = Util.GetFeatureClass(LocalFCName, ref ErrorMessage);
+            ThisFC = GetFeatureClass(LocalFCName, ref ErrorMessage);
             if (string.IsNullOrEmpty(ErrorMessage) == false) return "";
 
             return GetFirstRecordValue(ThisFC, FieldName, WhereClause);
         }
 
         /// <summary>
-        /// check if an object represents a numeric value
+        ///     check if an object represents a numeric value
         /// </summary>
         public static bool IsNumeric(object ThisValue)
         {
@@ -4035,11 +4036,10 @@ namespace NPSTransectTool
         }
 
         /// <summary>
-        /// update main form progress label with an update message
+        ///     update main form progress label with an update message
         /// </summary>
         public static void SetProgressMessage(string ThisMessage, bool AdvanceStep)
         {
-
             if (ThisMessage == "")
             {
                 NPSGlobal.Instance.ProgressLabel = null;
@@ -4050,7 +4050,7 @@ namespace NPSTransectTool
             if (NPSGlobal.Instance.ProgressStepTotal > -1 && NPSGlobal.Instance.ProgressStepIndex > -1)
             {
                 ThisMessage = "(" + NPSGlobal.Instance.ProgressStepIndex + " of "
-                 + NPSGlobal.Instance.ProgressStepTotal + ") " + ThisMessage;
+                              + NPSGlobal.Instance.ProgressStepTotal + ") " + ThisMessage;
                 if (AdvanceStep) NPSGlobal.Instance.ProgressStepIndex++;
             }
 
@@ -4064,21 +4064,23 @@ namespace NPSTransectTool
             else
                 NPSGlobal.Instance.ProgressLabel.Text = ThisMessage;
 
-            System.Windows.Forms.Application.DoEvents();
+            Application.DoEvents();
         }
+
         public static void SetProgressMessage(string ThisMessage, int StepTotal)
         {
             NPSGlobal.Instance.ProgressStepTotal = StepTotal;
             NPSGlobal.Instance.ProgressStepIndex = 1;
-            Util.SetProgressMessage(ThisMessage);
+            SetProgressMessage(ThisMessage);
         }
+
         public static void SetProgressMessage(string ThisMessage)
         {
-            Util.SetProgressMessage(ThisMessage, true);
+            SetProgressMessage(ThisMessage, true);
         }
 
         /// <summary>
-        /// get a default value in the defaultvalues table
+        ///     get a default value in the defaultvalues table
         /// </summary>
         public static string GetArcPadDefaultValue(string DefName, ref string ErrorMessage)
         {
@@ -4093,7 +4095,7 @@ namespace NPSTransectTool
 
             NPS = NPSGlobal.Instance;
 
-            ArcPadDefaults = Util.GetDefaultValuesTable(ref ErrorMessage);
+            ArcPadDefaults = GetDefaultValuesTable(ref ErrorMessage);
             if (string.IsNullOrEmpty(ErrorMessage) == false) return "";
 
             DefValueFieldIndex = ArcPadDefaults.FindField("DEFVALUE");
@@ -4114,17 +4116,19 @@ namespace NPSTransectTool
                 ThisRow = ThisCursor.NextRow();
 
                 if (ThisRow != null)
-                    RetValue = (string)Util.SafeConvert(ThisRow.get_Value(DefValueFieldIndex), typeof(string));
+                    RetValue = (string) SafeConvert(ThisRow.get_Value(DefValueFieldIndex), typeof (string));
 
                 ThisCursor = null;
             }
-            catch { }
+            catch
+            {
+            }
 
             return RetValue;
         }
 
         /// <summary>
-        /// set a default value in the defaultvalues table
+        ///     set a default value in the defaultvalues table
         /// </summary>
         public static void SetArcPadDefaultValue(string DefName, string DefValue, ref string ErrorMessage)
         {
@@ -4138,7 +4142,7 @@ namespace NPSTransectTool
 
             NPS = NPSGlobal.Instance;
 
-            ArcPadDefaults = Util.GetDefaultValuesTable(ref ErrorMessage);
+            ArcPadDefaults = GetDefaultValuesTable(ref ErrorMessage);
             if (string.IsNullOrEmpty(ErrorMessage) == false) return;
 
             DefValueFieldIndex = ArcPadDefaults.FindField("DEFVALUE");
@@ -4166,11 +4170,13 @@ namespace NPSTransectTool
 
                 ThisCursor = null;
             }
-            catch { }
+            catch
+            {
+            }
         }
 
         /// <summary>
-        /// get defaultvalues table
+        ///     get defaultvalues table
         /// </summary>
         public static ITable GetDefaultValuesTable(ref string ErrorMessage)
         {
@@ -4182,32 +4188,30 @@ namespace NPSTransectTool
             //DBFolderPath = System.IO.Path.GetDirectoryName(NPS.DatabasePath);
             //return Util.GetTable(NPS.TBL_DEFAULTVALUES, DBFolderPath, ref ErrorMessage);
 
-            return Util.GetTable(NPS.TBL_DEFAULTVALUES, ref ErrorMessage);
-
+            return GetTable(NPS.TBL_DEFAULTVALUES, ref ErrorMessage);
         }
 
         /// <summary>
-        /// export default values table to a standonly dbase file at the specified file path
+        ///     export default values table to a standonly dbase file at the specified file path
         /// </summary>
         public static void ExportDefaultValuesTable(string ExportTablePath, ref string ErrorMessage)
         {
-
-            ESRI.ArcGIS.Geoprocessing.IGeoProcessorResult GeoResult = null;
-            ESRI.ArcGIS.Geoprocessing.IGeoProcessor ThisGeoProcessor = null;
-            ESRI.ArcGIS.esriSystem.IVariantArray GPParams;
+            IGeoProcessorResult GeoResult = null;
+            IGeoProcessor ThisGeoProcessor = null;
+            IVariantArray GPParams;
             ITable DefaultValuesTable;
             IWorkspace ShapeFileWorkspace;
 
             try
             {
-                DefaultValuesTable = Util.GetDefaultValuesTable(ref ErrorMessage);
+                DefaultValuesTable = GetDefaultValuesTable(ref ErrorMessage);
                 if (string.IsNullOrEmpty(ErrorMessage) == false) return;
 
-                ShapeFileWorkspace = Util.OpenShapeFileWorkspace(ExportTablePath, ref ErrorMessage);
+                ShapeFileWorkspace = OpenShapeFileWorkspace(ExportTablePath, ref ErrorMessage);
                 if (string.IsNullOrEmpty(ErrorMessage) == false) return;
 
-                ThisGeoProcessor = new ESRI.ArcGIS.Geoprocessing.GeoProcessor();
-                GPParams = new ESRI.ArcGIS.esriSystem.VarArrayClass();
+                ThisGeoProcessor = new GeoProcessor();
+                GPParams = new VarArrayClass();
 
                 GPParams.Add(DefaultValuesTable);
                 GPParams.Add(ShapeFileWorkspace);
@@ -4219,80 +4223,77 @@ namespace NPSTransectTool
             {
                 ErrorMessage = "Error occured while exporting defaultvalues table. " + ex.Message;
             }
-
         }
 
         /// <summary>
-        /// create polyline, point or polygon (simple) featureclass
+        ///     create polyline, point or polygon (simple) featureclass
         /// </summary>
         public static IFeatureClass CreateWorkspaceFeatureClass(string FCName, IWorkspace featWorkspace,
-            esriGeometryType geomType, IFields pfields, ISpatialReference pSR, ref string ErrorMessage)
+                                                                esriGeometryType geomType, IFields pfields,
+                                                                ISpatialReference pSR, ref string ErrorMessage)
         {
-
             IField pField;
-            ESRI.ArcGIS.esriSystem.UIDClass pCLSID;
+            UIDClass pCLSID;
             IGeometryDef pGeomDef;
 
-            pCLSID = new ESRI.ArcGIS.esriSystem.UIDClass();
+            pCLSID = new UIDClass();
             pCLSID.Value = "esricore.Feature";
 
             //create geom def
             pGeomDef = new GeometryDefClass();
-            ((IGeometryDefEdit)pGeomDef).GeometryType_2 = geomType;
-            ((IGeometryDefEdit)pGeomDef).SpatialReference_2 = pSR;
+            ((IGeometryDefEdit) pGeomDef).GeometryType_2 = geomType;
+            ((IGeometryDefEdit) pGeomDef).SpatialReference_2 = pSR;
 
             //create the geometry field
             pField = new FieldClass();
-            ((IFieldEdit)pField).Name_2 = "SHAPE";
-            ((IFieldEdit)pField).AliasName_2 = "SHAPE";
-            ((IFieldEdit)pField).Type_2 = esriFieldType.esriFieldTypeGeometry;
-            ((IFieldEdit)pField).GeometryDef_2 = pGeomDef;
+            ((IFieldEdit) pField).Name_2 = "SHAPE";
+            ((IFieldEdit) pField).AliasName_2 = "SHAPE";
+            ((IFieldEdit) pField).Type_2 = esriFieldType.esriFieldTypeGeometry;
+            ((IFieldEdit) pField).GeometryDef_2 = pGeomDef;
 
             //add geometry to field collection
-            ((IFieldsEdit)pfields).AddField(pField);
+            ((IFieldsEdit) pfields).AddField(pField);
 
             // create the object id field
             pField = new FieldClass();
-            ((IFieldEdit)pField).Name_2 = "OBJECTID";
-            ((IFieldEdit)pField).AliasName_2 = "OBJECTID";
-            ((IFieldEdit)pField).Type_2 = esriFieldType.esriFieldTypeOID;
-            ((IFieldsEdit)pfields).AddField(pField);
+            ((IFieldEdit) pField).Name_2 = "OBJECTID";
+            ((IFieldEdit) pField).AliasName_2 = "OBJECTID";
+            ((IFieldEdit) pField).Type_2 = esriFieldType.esriFieldTypeOID;
+            ((IFieldsEdit) pfields).AddField(pField);
 
             try
             {
-
                 //create the feature class
-                return ((IFeatureWorkspace)featWorkspace).CreateFeatureClass(FCName, pfields, pCLSID,
-                                           null, esriFeatureType.esriFTSimple, "SHAPE", "");
+                return ((IFeatureWorkspace) featWorkspace).CreateFeatureClass(FCName, pfields, pCLSID,
+                                                                              null, esriFeatureType.esriFTSimple,
+                                                                              "SHAPE", "");
             }
             catch (Exception ex)
             {
                 ErrorMessage = "Error occured while create FeatureClass. " + ex.Message;
                 return null;
             }
-
         }
 
         /// <summary>
-        /// add raster or featureclass to map as layer
+        ///     add raster or featureclass to map as layer
         /// </summary>
         public static void AddDataToMapAsLayer(IGeoDataset RasterDSOrFeatureClass, string LayerName)
         {
-
             ILayer ThisLayer = null;
 
             if (RasterDSOrFeatureClass is IRasterDataset)
             {
                 //add rasterdataset as raster layer
-                ThisLayer = new RasterLayerClass() as ILayer;
-                ((IRasterLayer)ThisLayer).CreateFromDataset(RasterDSOrFeatureClass as IRasterDataset);
+                ThisLayer = new RasterLayerClass();
+                ((IRasterLayer) ThisLayer).CreateFromDataset(RasterDSOrFeatureClass as IRasterDataset);
             }
 
             if (RasterDSOrFeatureClass is IFeatureClass)
             {
                 //add feature class to a feature layer
-                ThisLayer = new FeatureLayerClass() as ILayer;
-                ((IFeatureLayer)ThisLayer).FeatureClass = RasterDSOrFeatureClass as IFeatureClass;
+                ThisLayer = new FeatureLayerClass();
+                ((IFeatureLayer) ThisLayer).FeatureClass = RasterDSOrFeatureClass as IFeatureClass;
             }
 
             ThisLayer.Name = LayerName;
@@ -4300,15 +4301,13 @@ namespace NPSTransectTool
             //Add the raster layer to ArcMap
             NPSGlobal.Instance.Document.FocusMap.AddLayer(ThisLayer);
             NPSGlobal.Instance.Document.ActiveView.Refresh();
-
         }
 
         /// <summary>
-        /// get layer by name from the current arcmap instace
+        ///     get layer by name from the current arcmap instace
         /// </summary>
         public static ILayer GetLayer(string LayerName)
         {
-
             IEnumLayer LayerList;
             ILayer ThisLayer;
 
@@ -4320,22 +4319,25 @@ namespace NPSTransectTool
                 if (ThisLayer.Name == LayerName) return ThisLayer;
             }
             return null;
-
         }
 
         public static string RunSystemChecks()
         {
-            string DEMFilePath, ErrorMessage = "", MXDPath, ArcGISVersion,
-                ScratchWSPath = "", CurrentWSPath = "", GPError = "";
-            StringBuilder CheckResults = new StringBuilder();
-            Microsoft.Win32.RegistryKey RegKey;
-            ESRI.ArcGIS.Geoprocessing.IGeoProcessor ThisGeoProcessor = null;
+            string DEMFilePath,
+                   ErrorMessage = "",
+                   MXDPath,
+                   ArcGISVersion,
+                   ScratchWSPath = "",
+                   CurrentWSPath = "",
+                   GPError = "";
+            var CheckResults = new StringBuilder();
+            RegistryKey RegKey;
+            IGeoProcessor ThisGeoProcessor = null;
             List<string> WorkspacePaths;
             IGeoDataset GeoDS;
             IDataset ThisDS;
             NPSGlobal NPS;
             bool IsOK;
-
 
 
             NPS = NPSGlobal.Instance;
@@ -4347,11 +4349,14 @@ namespace NPSTransectTool
                 CheckResults.Append("ArcGIS Version:");
                 CheckResults.Append("\r\n");
 
-                RegKey = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(
-                        @"SOFTWARE\ESRI\ArcInfo\Desktop\8.0");
+                RegKey = Registry.LocalMachine.OpenSubKey(
+                    @"SOFTWARE\ESRI\ArcInfo\Desktop\8.0");
                 ArcGISVersion = RegKey.GetValue("RealVersion", "") as string;
             }
-            catch { ArcGISVersion = "!!!Could not read Realersion info!!!"; }
+            catch
+            {
+                ArcGISVersion = "!!!Could not read Realersion info!!!";
+            }
             CheckResults.Append(ArcGISVersion);
             CheckResults.Append("\r\n\r\n");
 
@@ -4360,14 +4365,16 @@ namespace NPSTransectTool
                 CheckResults.Append("ArcGIS Build:");
                 CheckResults.Append("\r\n");
 
-                RegKey = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(
-                        @"SOFTWARE\ESRI\ArcInfo\Desktop\8.0");
+                RegKey = Registry.LocalMachine.OpenSubKey(
+                    @"SOFTWARE\ESRI\ArcInfo\Desktop\8.0");
                 ArcGISVersion = RegKey.GetValue("BuildNumber", "") as string;
             }
-            catch { ArcGISVersion = "!!!Could not read Build info!!!"; }
+            catch
+            {
+                ArcGISVersion = "!!!Could not read Build info!!!";
+            }
             CheckResults.Append(ArcGISVersion);
             CheckResults.Append("\r\n\r\n");
-
 
 
             //dem file path check
@@ -4402,7 +4409,7 @@ namespace NPSTransectTool
             CheckResults.Append("DEM file projection:");
             CheckResults.Append("\r\n");
 
-            GeoDS = Util.OpenRasterDataset(DEMFilePath, ref ErrorMessage) as IGeoDataset;
+            GeoDS = OpenRasterDataset(DEMFilePath, ref ErrorMessage) as IGeoDataset;
             if (string.IsNullOrEmpty(ErrorMessage) == false || GeoDS == null)
                 CheckResults.Append("!!!Could not load DEM file to determine projection!!!");
             else
@@ -4427,44 +4434,44 @@ namespace NPSTransectTool
             CheckResults.Append("\r\n");
 
             CheckResults.Append(NPS.LYR_SURVEY_BOUNDARY + ": ");
-            ThisDS = Util.GetFeatureClass(NPS.LYR_SURVEY_BOUNDARY, ref ErrorMessage) as IDataset;
+            ThisDS = GetFeatureClass(NPS.LYR_SURVEY_BOUNDARY, ref ErrorMessage) as IDataset;
             if (string.IsNullOrEmpty(ErrorMessage) == false || ThisDS == null)
                 CheckResults.Append("!!!Could not find FeatureClass!!!");
             else
-                CheckResults.Append(System.IO.Path.Combine(ThisDS.Workspace.PathName, ThisDS.Name));
+                CheckResults.Append(Path.Combine(ThisDS.Workspace.PathName, ThisDS.Name));
 
             ErrorMessage = "";
             CheckResults.Append("\r\n");
 
             //==========
             CheckResults.Append(NPS.LYR_EXCLUDED_AREAS + ": ");
-            ThisDS = Util.GetFeatureClass(NPS.LYR_EXCLUDED_AREAS, ref ErrorMessage) as IDataset;
+            ThisDS = GetFeatureClass(NPS.LYR_EXCLUDED_AREAS, ref ErrorMessage) as IDataset;
             if (string.IsNullOrEmpty(ErrorMessage) == false || ThisDS == null)
                 CheckResults.Append("!!!Could not find FeatureClass!!!");
             else
-                CheckResults.Append(System.IO.Path.Combine(ThisDS.Workspace.PathName, ThisDS.Name));
+                CheckResults.Append(Path.Combine(ThisDS.Workspace.PathName, ThisDS.Name));
 
             ErrorMessage = "";
             CheckResults.Append("\r\n");
 
             //==========
             CheckResults.Append(NPS.LYR_RANDOMPOINTS + ": ");
-            ThisDS = Util.GetFeatureClass(NPS.LYR_RANDOMPOINTS, ref ErrorMessage) as IDataset;
+            ThisDS = GetFeatureClass(NPS.LYR_RANDOMPOINTS, ref ErrorMessage) as IDataset;
             if (string.IsNullOrEmpty(ErrorMessage) == false || ThisDS == null)
                 CheckResults.Append("!!!Could not find FeatureClass!!!");
             else
-                CheckResults.Append(System.IO.Path.Combine(ThisDS.Workspace.PathName, ThisDS.Name));
+                CheckResults.Append(Path.Combine(ThisDS.Workspace.PathName, ThisDS.Name));
 
             ErrorMessage = "";
             CheckResults.Append("\r\n");
 
             //==========
             CheckResults.Append(NPS.LYR_GENERATED_TRANSECTS + ": ");
-            ThisDS = Util.GetFeatureClass(NPS.LYR_GENERATED_TRANSECTS, ref ErrorMessage) as IDataset;
+            ThisDS = GetFeatureClass(NPS.LYR_GENERATED_TRANSECTS, ref ErrorMessage) as IDataset;
             if (string.IsNullOrEmpty(ErrorMessage) == false || ThisDS == null)
                 CheckResults.Append("!!!Could not find FeatureClass!!!");
             else
-                CheckResults.Append(System.IO.Path.Combine(ThisDS.Workspace.PathName, ThisDS.Name));
+                CheckResults.Append(Path.Combine(ThisDS.Workspace.PathName, ThisDS.Name));
 
             ErrorMessage = "";
 
@@ -4475,7 +4482,7 @@ namespace NPSTransectTool
             //===================
             CheckResults.Append("Workspaces active in MXD:");
             CheckResults.Append("\r\n");
-            WorkspacePaths = Util.GetUniqueWorkspacesInMXD();
+            WorkspacePaths = GetUniqueWorkspacesInMXD();
             if (WorkspacePaths.Count > 0)
             {
                 for (int Index = 0; Index < WorkspacePaths.Count; Index++)
@@ -4490,14 +4497,13 @@ namespace NPSTransectTool
 
             try
             {
-                ThisGeoProcessor = new ESRI.ArcGIS.Geoprocessing.GeoProcessor();
+                ThisGeoProcessor = new GeoProcessor();
             }
             catch (Exception ex)
             {
                 GPError = ex.Message;
                 ThisGeoProcessor = null;
             }
-
 
 
             //Scratch workspace path check
@@ -4532,7 +4538,6 @@ namespace NPSTransectTool
             CheckResults.Append("\r\n\r\n");
 
 
-
             //Current workspace path check
             //====================
             CheckResults.Append("Current Workspace Path:");
@@ -4549,7 +4554,6 @@ namespace NPSTransectTool
                 }
                 else
                 {
-
                     CheckResults.Append(CurrentWSPath);
 
                     if (CurrentWSPath.Contains(" "))
@@ -4567,8 +4571,6 @@ namespace NPSTransectTool
             ThisGeoProcessor = null;
 
 
-
-
             //Read/Write scratch workspace path check
             //====================
             if (string.IsNullOrEmpty(ScratchWSPath) == false)
@@ -4578,7 +4580,7 @@ namespace NPSTransectTool
                     CheckResults.Append("Scratch Workspace Path Security:");
                     CheckResults.Append("\r\n");
 
-                    if (Util.CheckPathPrivelages(ScratchWSPath, ref ErrorMessage) == false)
+                    if (CheckPathPrivelages(ScratchWSPath, ref ErrorMessage) == false)
                         CheckResults.Append("!!!Failed. " + ErrorMessage + "!!!");
                     else
                         CheckResults.Append("OK");
@@ -4586,7 +4588,6 @@ namespace NPSTransectTool
                     CheckResults.Append("\r\n\r\n");
                 }
             }
-
 
 
             //Read/Write current workspace path check
@@ -4598,7 +4599,7 @@ namespace NPSTransectTool
                     CheckResults.Append("Current Workspace Path Security:");
                     CheckResults.Append("\r\n");
 
-                    if (Util.CheckPathPrivelages(CurrentWSPath, ref ErrorMessage) == false)
+                    if (CheckPathPrivelages(CurrentWSPath, ref ErrorMessage) == false)
                         CheckResults.Append("!!!Failed. " + ErrorMessage + "!!!");
                     else
                         CheckResults.Append("OK");
@@ -4637,7 +4638,6 @@ namespace NPSTransectTool
             CheckResults.Append("\r\n\r\n");
 
 
-
             //path to mxd
             //====================
             IsOK = true;
@@ -4661,7 +4661,7 @@ namespace NPSTransectTool
         public static List<string> GetUniqueWorkspacesInMXD()
         {
             NPSGlobal NPS = NPSGlobal.Instance;
-            List<string> WSPaths = new List<string>();
+            var WSPaths = new List<string>();
 
             for (int LayerIndex = 0; LayerIndex < NPS.Map.LayerCount; LayerIndex++)
             {
@@ -4669,11 +4669,11 @@ namespace NPSTransectTool
 
                 if (ThisLayer is IFeatureLayer)
                 {
-                    IFeatureClass ThisFC = ((IFeatureLayer)ThisLayer).FeatureClass;
+                    IFeatureClass ThisFC = ((IFeatureLayer) ThisLayer).FeatureClass;
                     if (ThisFC != null)
                     {
-                        if (WSPaths.IndexOf(((IDataset)ThisFC).Workspace.PathName) == -1)
-                            WSPaths.Add(((IDataset)ThisFC).Workspace.PathName);
+                        if (WSPaths.IndexOf(((IDataset) ThisFC).Workspace.PathName) == -1)
+                            WSPaths.Add(((IDataset) ThisFC).Workspace.PathName);
                     }
                 }
             }
@@ -4683,36 +4683,35 @@ namespace NPSTransectTool
 
         public static bool CheckPathPrivelages(string FolderPath, ref string ErrorMessage)
         {
-            System.IO.Stream ThisStream;
-            System.IO.StreamReader ThisReader;
-            System.IO.StreamWriter ThisWriter;
+            Stream ThisStream;
+            StreamReader ThisReader;
+            StreamWriter ThisWriter;
             string TestFile, TestString;
 
-            TestFile = System.IO.Path.Combine(FolderPath, "test.txt");
+            TestFile = Path.Combine(FolderPath, "test.txt");
 
             try
             {
                 //try create                  
-                ThisStream = System.IO.File.Open(TestFile, System.IO.FileMode.OpenOrCreate);
+                ThisStream = File.Open(TestFile, FileMode.OpenOrCreate);
                 ThisStream.Close();
 
                 //try opening and writing
-                using (ThisWriter = new System.IO.StreamWriter(TestFile))
+                using (ThisWriter = new StreamWriter(TestFile))
                 {
                     ThisWriter.WriteLine("test");
                 }
 
                 //try reading
-                using (ThisReader = new System.IO.StreamReader(TestFile))
+                using (ThisReader = new StreamReader(TestFile))
                 {
                     TestString = ThisReader.ReadLine();
                 }
 
                 //remove test file
-                System.IO.File.Delete(TestFile);
+                File.Delete(TestFile);
 
                 return true;
-
             }
             catch (Exception ex)
             {
@@ -4720,16 +4719,18 @@ namespace NPSTransectTool
 
                 try
                 {
-                    System.IO.File.Delete(TestFile);
+                    File.Delete(TestFile);
                 }
-                catch { }
+                catch
+                {
+                }
 
                 return false;
             }
         }
 
         /// <summary>
-        /// get the version number of the current assembly
+        ///     get the version number of the current assembly
         /// </summary>
         public static string GetAssemblyVersion()
         {
@@ -4738,13 +4739,12 @@ namespace NPSTransectTool
 
             try
             {
-
-                ThisVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+                ThisVersion = Assembly.GetExecutingAssembly().GetName().Version;
 
                 return string.Format("{0}.{1}.{2}",
-                    ThisVersion.Major,
-                    ThisVersion.Minor,
-                    ThisVersion.Build);
+                                     ThisVersion.Major,
+                                     ThisVersion.Minor,
+                                     ThisVersion.Build);
             }
             catch
             {
@@ -4752,9 +4752,6 @@ namespace NPSTransectTool
             }
         }
     }
-
-
-
 
 
     public enum SavedValuesAction

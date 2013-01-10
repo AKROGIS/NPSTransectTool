@@ -19,32 +19,15 @@ namespace NPSTransectTool
 
         private void StraightLineForm_Load(object sender, EventArgs e)
         {
-            IFeatureCursor AnimalCursor, HorizonCursor;
-            int ResultsCount = 0;
-            string ErrorMessage = "", AnimalDisplayMessage = "", HorizonDisplayMessage = "", DefExpress = "";
-            bool IsSelection = false;
+            int resultsCount = 0;
+            string errorMessage = "";
+            string animalDisplayMessage = "";
+            string horizonDisplayMessage = "";
+            string defExpress = "";
+            bool isSelection = false;
 
-            AnimalCursor = Util.GetLayerSelection(m_NPS.LYR_ANIMALS, true, true,
-                                                  ref ResultsCount, ref IsSelection, ref DefExpress, ref m_ErrorMessage);
-
-            if (!string.IsNullOrEmpty(m_ErrorMessage))
-            {
-                txtMessage.Text = m_ErrorMessage;
-                return;
-            }
-
-            if (IsSelection)
-                AnimalDisplayMessage += "Selected Sightings Count  : " + ResultsCount + "\r\n";
-
-            if (string.IsNullOrEmpty(DefExpress) == false)
-                AnimalDisplayMessage += "Sightings Definition Query: " + DefExpress + "\r\n";
-
-            if (string.IsNullOrEmpty(AnimalDisplayMessage))
-                AnimalDisplayMessage += "All Sightings in the database will be processed.\r\n";
-
-
-            HorizonCursor = Util.GetLayerSelection(m_NPS.LYR_HORIZON, true, true,
-                                                   ref ResultsCount, ref IsSelection, ref DefExpress, ref ErrorMessage);
+            Util.GetLayerSelection(m_NPS.LYR_ANIMALS, true, true,
+                                   ref resultsCount, ref isSelection, ref defExpress, ref m_ErrorMessage);
 
             if (!string.IsNullOrEmpty(m_ErrorMessage))
             {
@@ -52,20 +35,36 @@ namespace NPSTransectTool
                 return;
             }
 
-            if (IsSelection)
-                HorizonDisplayMessage += "Selected Horizons Count  : " + ResultsCount + "\r\n";
+            if (isSelection)
+                animalDisplayMessage += "Selected Sightings Count  : " + resultsCount + "\r\n";
 
-            if (string.IsNullOrEmpty(DefExpress) == false)
-                HorizonDisplayMessage += "Horizons Definition Query: " + DefExpress + "\r\n";
+            if (string.IsNullOrEmpty(defExpress) == false)
+                animalDisplayMessage += "Sightings Definition Query: " + defExpress + "\r\n";
 
-            if (string.IsNullOrEmpty(AnimalDisplayMessage))
-                HorizonDisplayMessage += "All Horizons in the database will be processed.\r\n";
+            if (string.IsNullOrEmpty(animalDisplayMessage))
+                animalDisplayMessage += "All Sightings in the database will be processed.\r\n";
 
 
-            txtMessage.Text = AnimalDisplayMessage + "\r\n\r\n" + HorizonDisplayMessage;
+            Util.GetLayerSelection(m_NPS.LYR_HORIZON, true, true,
+                                   ref resultsCount, ref isSelection, ref defExpress, ref errorMessage);
 
-            AnimalCursor = null;
-            HorizonCursor = null;
+            if (!string.IsNullOrEmpty(m_ErrorMessage))
+            {
+                txtMessage.Text = m_ErrorMessage;
+                return;
+            }
+
+            if (isSelection)
+                horizonDisplayMessage += "Selected Horizons Count  : " + resultsCount + "\r\n";
+
+            if (string.IsNullOrEmpty(defExpress) == false)
+                horizonDisplayMessage += "Horizons Definition Query: " + defExpress + "\r\n";
+
+            if (string.IsNullOrEmpty(animalDisplayMessage))
+                horizonDisplayMessage += "All Horizons in the database will be processed.\r\n";
+
+
+            txtMessage.Text = animalDisplayMessage + "\r\n\r\n" + horizonDisplayMessage;
         }
 
         private void btnClose_Click(object sender, EventArgs e)
@@ -75,7 +74,7 @@ namespace NPSTransectTool
 
         private void btnHelp_Click(object sender, EventArgs e)
         {
-            string HelpText = @"
+            const string helpText = @"
             ** Instructions **
 
             The Straight-Line Tool is used to recalculate the distance of sightings' and horizons' 
@@ -95,17 +94,19 @@ namespace NPSTransectTool
 
             using (var form = new HelpMessageForm())
             {
-                form.txtHelpMessage.Text = HelpText;
+                form.txtHelpMessage.Text = helpText;
                 form.ShowDialog();
             }
         }
 
         private void btnRun_Click(object sender, EventArgs e)
         {
-            IFeatureCursor AnimalCursor, HorizonCursor;
-            int SelectionCount = 0, AnimalUpdateCount = 0, HorizonUpdateCount = 0;
-            string ErrorMessage = "", DefExpress = "";
-            bool IsSelection = false;
+            int selectionCount = 0;
+            int animalUpdateCount;
+            int horizonUpdateCount = 0;
+            string errorMessage = "";
+            string defExpress = "";
+            bool isSelection = false;
 
             if (!string.IsNullOrEmpty(m_ErrorMessage))
             {
@@ -113,167 +114,152 @@ namespace NPSTransectTool
                 return;
             }
 
-            AnimalCursor = Util.GetLayerSelection(m_NPS.LYR_ANIMALS, true, true,
-                                                  ref SelectionCount, ref IsSelection, ref DefExpress,
-                                                  ref m_ErrorMessage);
+            IFeatureCursor animalCursor = Util.GetLayerSelection(m_NPS.LYR_ANIMALS, true, true,
+                                                                 ref selectionCount, ref isSelection, ref defExpress,
+                                                                 ref m_ErrorMessage);
 
-            HorizonCursor = Util.GetLayerSelection(m_NPS.LYR_HORIZON, true, true,
-                                                   ref SelectionCount, ref IsSelection, ref DefExpress, ref ErrorMessage);
+            IFeatureCursor HorizonCursor = Util.GetLayerSelection(m_NPS.LYR_HORIZON, true, true,
+                                                                  ref selectionCount, ref isSelection, ref defExpress, ref errorMessage);
 
-            RecalDistance(AnimalCursor, ref AnimalUpdateCount, ref ErrorMessage);
-            if (string.IsNullOrEmpty(ErrorMessage) == false)
+            RecalDistance(animalCursor, out animalUpdateCount, ref errorMessage);
+            if (string.IsNullOrEmpty(errorMessage) == false)
             {
-                MessageBox.Show(ErrorMessage);
+                MessageBox.Show(errorMessage);
             }
 
-            if (string.IsNullOrEmpty(ErrorMessage))
+            if (string.IsNullOrEmpty(errorMessage))
             {
-                RecalDistance(HorizonCursor, ref HorizonUpdateCount, ref ErrorMessage);
-                if (string.IsNullOrEmpty(ErrorMessage) == false)
+                RecalDistance(HorizonCursor, out horizonUpdateCount, ref errorMessage);
+                if (string.IsNullOrEmpty(errorMessage) == false)
                 {
-                    MessageBox.Show(ErrorMessage);
+                    MessageBox.Show(errorMessage);
                 }
             }
 
-            if (string.IsNullOrEmpty(ErrorMessage))
+            if (string.IsNullOrEmpty(errorMessage))
             {
-                MessageBox.Show("Update completed successfully!\r\n\r\nSightings updated: " + AnimalUpdateCount
-                                + "\r\nHorizons updated: " + HorizonUpdateCount);
+                MessageBox.Show("Update completed successfully!\r\n\r\nSightings updated: " + animalUpdateCount
+                                + "\r\nHorizons updated: " + horizonUpdateCount);
             }
 
-            AnimalCursor = null;
-            HorizonCursor = null;
         }
 
-        private void RecalDistance(IFeatureCursor ThisCursor, ref int UpdateCount, ref string ErrorMessage)
+        private void RecalDistance(IFeatureCursor thisCursor, out int updateCount, ref string errorMessage)
         {
-            IFeature ThisFeature, TransectFFeature;
-            string TransectID, SurveyID;
-            IFeatureClass TransLinesFC;
-            IFeatureCursor TransectFCursor;
-            int TransectIDIndex = 0, DistanceFieldIndex = 0, SurveyIDIndex = 0;
-            IQueryFilter qFilter;
-            ICurve ThisCurve;
-            IPoint ThisPoint, pOutPoint = null;
-            double DistanceAlongCurve = 0, DistanceFromCurve = 0, ClosestDistance = 0;
-            bool RightSide = false, FirstRecord = false;
+            int transectIdIndex = 0;
+            int distanceFieldIndex = 0;
+            int surveyIdIndex = 0;
+            double distanceAlongCurve = 0;
+            double distanceFromCurve = 0;
+            bool rightSide = false;
 
 
-            UpdateCount = 0;
+            updateCount = 0;
 
             //make sure we got the  transect lines featureclass
-            TransLinesFC = Util.GetFeatureClass(m_NPS.LYR_TRACKLOG, m_NPS.Workspace, ref ErrorMessage);
-            if (string.IsNullOrEmpty(ErrorMessage) == false)
+            IFeatureClass transLinesFc = Util.GetFeatureClass(m_NPS.LYR_TRACKLOG, m_NPS.Workspace, ref errorMessage);
+            if (string.IsNullOrEmpty(errorMessage) == false)
                 return;
 
             //get first record
-            ThisFeature = ThisCursor.NextFeature();
+            IFeature thisFeature = thisCursor.NextFeature();
 
             //if we have no feature here then the recordset is empty
-            if (ThisFeature == null)
-            {
-                ThisCursor = null;
+            if (thisFeature == null)
                 return;
-            }
 
 
             //make sure we have the transect field
-            if (string.IsNullOrEmpty(ErrorMessage))
+            if (string.IsNullOrEmpty(errorMessage))
             {
-                TransectIDIndex = ThisFeature.Fields.FindField("TransectID");
-                if (TransectIDIndex < 0) ErrorMessage = "No transect id field found.";
+                transectIdIndex = thisFeature.Fields.FindField("TransectID");
+                if (transectIdIndex < 0) errorMessage = "No transect id field found.";
             }
 
             //make sure we have the transect field
-            if (string.IsNullOrEmpty(ErrorMessage))
+            if (string.IsNullOrEmpty(errorMessage))
             {
-                SurveyIDIndex = ThisFeature.Fields.FindField("SurveyID");
-                if (SurveyIDIndex < 0) ErrorMessage = "No survey id field found.";
+                surveyIdIndex = thisFeature.Fields.FindField("SurveyID");
+                if (surveyIdIndex < 0) errorMessage = "No survey id field found.";
             }
 
             //make sure we have a distance field
-            if (string.IsNullOrEmpty(ErrorMessage))
+            if (string.IsNullOrEmpty(errorMessage))
             {
-                DistanceFieldIndex = ThisFeature.Fields.FindField("DIST2TRANS");
-                if (DistanceFieldIndex < 0) DistanceFieldIndex = ThisFeature.Fields.FindField("DistToSeg");
-                if (DistanceFieldIndex < 0) ErrorMessage = "No distance field found.";
+                distanceFieldIndex = thisFeature.Fields.FindField("DIST2TRANS");
+                if (distanceFieldIndex < 0) distanceFieldIndex = thisFeature.Fields.FindField("DistToSeg");
+                if (distanceFieldIndex < 0) errorMessage = "No distance field found.";
             }
 
             //things not okay so abort
-            if (!string.IsNullOrEmpty(ErrorMessage))
-            {
-                ThisCursor = null;
+            if (!string.IsNullOrEmpty(errorMessage))
                 return;
-            }
+
 
             //loop through each feature, get it's transect segments and find the nearest one
             do
             {
                 //get transect id for feature
-                TransectID = (string) Util.SafeConvert(ThisFeature.get_Value(TransectIDIndex), typeof (string));
-                if (string.IsNullOrEmpty(TransectID)) continue;
+                var transectId = (string) Util.SafeConvert(thisFeature.Value[transectIdIndex], typeof (string));
+                if (string.IsNullOrEmpty(transectId)) continue;
 
                 //get survey id for feature
-                SurveyID = (string) Util.SafeConvert(ThisFeature.get_Value(SurveyIDIndex), typeof (string));
-                if (string.IsNullOrEmpty(SurveyID)) continue;
+                var surveyId = (string) Util.SafeConvert(thisFeature.Value[surveyIdIndex], typeof (string));
+                if (string.IsNullOrEmpty(surveyId)) continue;
 
                 //get point shape
-                ThisPoint = ThisFeature.ShapeCopy as IPoint;
+                var thisPoint = thisFeature.ShapeCopy as IPoint;
 
 
                 //get all segments on transect
-                qFilter = new QueryFilterClass();
-                qFilter.WhereClause = "TransectID=" + TransectID + " and SurveyID=" + SurveyID
+                IQueryFilter qFilter = new QueryFilterClass();
+                qFilter.WhereClause = "TransectID=" + transectId + " and SurveyID=" + surveyId
                                       + " and SegType='OnTransect'";
-                TransectFCursor = TransLinesFC.Search(qFilter, false);
+                IFeatureCursor transectFCursor = transLinesFc.Search(qFilter, false);
 
 
-                ClosestDistance = 0;
-                FirstRecord = true;
+                double closestDistance = 0;
+                bool firstRecord = true;
 
                 //check the distance of all segments and get the one nearest to the feature
-                while ((TransectFFeature = TransectFCursor.NextFeature()) != null)
+                IFeature transectFFeature;
+                while ((transectFFeature = transectFCursor.NextFeature()) != null)
                 {
-                    ThisCurve = TransectFFeature.ShapeCopy as ICurve;
+                    var thisCurve = transectFFeature.ShapeCopy as ICurve;
 
-                    var segID = (int) Util.SafeConvert(TransectFFeature.get_Value(
-                        TransectFFeature.Fields.FindField("SegmentID")), typeof (int));
+                    //var segID = (int) Util.SafeConvert(transectFFeature.Value[transectFFeature.Fields.FindField("SegmentID")], typeof (int));
 
                     //determine the distance between the two
-                    if (ThisCurve != null && ThisPoint != null)
+                    if (thisCurve != null && thisPoint != null)
                     {
-                        ThisCurve.QueryPointAndDistance(esriSegmentExtension.esriNoExtension, ThisPoint, false,
-                                                        pOutPoint,
-                                                        ref DistanceAlongCurve, ref DistanceFromCurve, ref RightSide);
+                        thisCurve.QueryPointAndDistance(esriSegmentExtension.esriNoExtension, thisPoint, false, null,
+                                                        ref distanceAlongCurve, ref distanceFromCurve, ref rightSide);
                     }
 
                     //if this is the first record then the first distance is the currently closest distance
-                    if (FirstRecord)
+                    if (firstRecord)
                     {
-                        ClosestDistance = DistanceFromCurve;
-                        FirstRecord = false;
+                        closestDistance = distanceFromCurve;
+                        firstRecord = false;
                     }
 
                     //if the current distance is less than the last distance, it now becomes the closest distance
-                    if (DistanceFromCurve < ClosestDistance)
-                        ClosestDistance = DistanceFromCurve;
+                    if (distanceFromCurve < closestDistance)
+                        closestDistance = distanceFromCurve;
                 }
-
-                //release transect cursor
-                TransectFCursor = null;
 
                 //if first record is still true then there were no transects to check for distance so don't update
-                if (FirstRecord == false)
+                if (firstRecord == false)
                 {
-                    UpdateCount = UpdateCount + 1;
+                    updateCount = updateCount + 1;
 
                     //update the feature with the closest distance
-                    ThisFeature.set_Value(DistanceFieldIndex, ClosestDistance);
+                    thisFeature.Value[distanceFieldIndex] = closestDistance;
 
                     //save new distance value
-                    ThisCursor.UpdateFeature(ThisFeature);
+                    thisCursor.UpdateFeature(thisFeature);
                 }
-            } while ((ThisFeature = ThisCursor.NextFeature()) != null);
+            } while ((thisFeature = thisCursor.NextFeature()) != null);
         }
     }
 }

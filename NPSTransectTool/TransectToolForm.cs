@@ -598,9 +598,9 @@ namespace NPSTransectTool
 
         private void btnExport_Click(object sender, EventArgs e)
         {
-            string ErrorMessage = "";
-            string InternalErr = "";
-            bool CantDeleteSoReuse = false;
+            string errorMessage = "";
+            string internalErr = "";
+            bool cantDeleteSoReuse = false;
 
             //get the selected survey id
             int surveyId = m_SurveysList[cboSurveysList.Text];
@@ -612,6 +612,12 @@ namespace NPSTransectTool
 
 
             string dbFolderPath = Path.GetDirectoryName(m_NPS.DatabasePath);
+            if (String.IsNullOrEmpty(dbFolderPath))
+            {
+                MessageBox.Show("Database Path(" + m_NPS.DatabasePath+") is not valid.");
+                return;
+            }
+
             string surveyFolderPath = Path.Combine(txtExportDataPath.Text, "Survey");
 
             //if the folder exists, try to delete
@@ -627,21 +633,21 @@ namespace NPSTransectTool
                 }
 
                 //try to delete existing folder or at least empty it out for resuse
-                Util.DeleteOrEmptyFolder(surveyFolderPath, true, ref CantDeleteSoReuse, ref ErrorMessage);
-                if (string.IsNullOrEmpty(ErrorMessage) == false)
+                Util.DeleteOrEmptyFolder(surveyFolderPath, true, ref cantDeleteSoReuse, ref errorMessage);
+                if (string.IsNullOrEmpty(errorMessage) == false)
                 {
-                    MessageBox.Show(ErrorMessage);
+                    MessageBox.Show(errorMessage);
                     return;
                 }
             }
 
             //if we are here and we are not reusing a folder, try to create the surve folder at the specified path
-            if (CantDeleteSoReuse == false)
+            if (cantDeleteSoReuse == false)
             {
-                Util.CreateDirectory(surveyFolderPath, ref ErrorMessage);
-                if (string.IsNullOrEmpty(ErrorMessage) == false)
+                Util.CreateDirectory(surveyFolderPath, ref errorMessage);
+                if (string.IsNullOrEmpty(errorMessage) == false)
                 {
-                    MessageBox.Show(ErrorMessage);
+                    MessageBox.Show(errorMessage);
                     return;
                 }
             }
@@ -658,10 +664,10 @@ namespace NPSTransectTool
             }
 
             //if we have the APL folder, copy it to the survey folder
-            Util.CopyFolder(Path.Combine(dbFolderPath, "APLs"), surveyFolderPath, ref ErrorMessage);
-            if (string.IsNullOrEmpty(ErrorMessage) == false)
+            Util.CopyFolder(Path.Combine(dbFolderPath, "APLs"), surveyFolderPath, ref errorMessage);
+            if (string.IsNullOrEmpty(errorMessage) == false)
             {
-                MessageBox.Show(ErrorMessage);
+                MessageBox.Show(errorMessage);
                 Util.SetProgressMessage("");
                 return;
             }
@@ -692,19 +698,19 @@ namespace NPSTransectTool
 
             //update defaultvalues table with survey specific values
             string thisFieldValue = Util.GetFirstRecordValue(m_NPS.LYR_SURVEY_BOUNDARY, "SurveyID", "SurveyID=" + surveyId);
-            Util.SetArcPadDefaultValue("SurveyID", thisFieldValue, ref InternalErr);
+            Util.SetArcPadDefaultValue("SurveyID", thisFieldValue, ref internalErr);
 
             thisFieldValue = Util.GetFirstRecordValue(m_NPS.LYR_SURVEY_BOUNDARY, "Park", "SurveyID=" + surveyId);
-            Util.SetArcPadDefaultValue("Park", thisFieldValue, ref InternalErr);
+            Util.SetArcPadDefaultValue("Park", thisFieldValue, ref internalErr);
 
             thisFieldValue = Util.GetFirstRecordValue(m_NPS.LYR_SURVEY_BOUNDARY, "SurveyName", "SurveyID=" + surveyId);
-            Util.SetArcPadDefaultValue("SurveyName", thisFieldValue, ref InternalErr);
+            Util.SetArcPadDefaultValue("SurveyName", thisFieldValue, ref internalErr);
 
             //export the defaultvalues table that resides in the geodatbase to the survey folder
-            Util.ExportDefaultValuesTable(surveyFolderPath, ref ErrorMessage);
-            if (string.IsNullOrEmpty(ErrorMessage) == false)
+            Util.ExportDefaultValuesTable(surveyFolderPath, ref errorMessage);
+            if (string.IsNullOrEmpty(errorMessage) == false)
             {
-                MessageBox.Show(ErrorMessage);
+                MessageBox.Show(errorMessage);
                 Util.SetProgressMessage("");
                 return;
             }
@@ -725,19 +731,19 @@ namespace NPSTransectTool
                 Util.SetProgressMessage("Building " + FCToExportName + " ShapeFile in Survey folder", false);
 
                 //get fc
-                IFeatureClass exportingFc = Util.GetFeatureClass(FCToExportName, ref ErrorMessage);
-                if (string.IsNullOrEmpty(ErrorMessage) == false)
+                IFeatureClass exportingFc = Util.GetFeatureClass(FCToExportName, ref errorMessage);
+                if (string.IsNullOrEmpty(errorMessage) == false)
                 {
-                    MessageBox.Show(ErrorMessage);
+                    MessageBox.Show(errorMessage);
                     Util.SetProgressMessage("");
                     return;
                 }
 
                 //export fc
-                Util.GP_FeatureclassToShapefile_conversion(exportingFc, surveyFolderPath, fcFilter, ref ErrorMessage);
-                if (string.IsNullOrEmpty(ErrorMessage) == false)
+                Util.GP_FeatureclassToShapefile_conversion(exportingFc, surveyFolderPath, fcFilter, ref errorMessage);
+                if (string.IsNullOrEmpty(errorMessage) == false)
                 {
-                    MessageBox.Show(ErrorMessage);
+                    MessageBox.Show(errorMessage);
                     Util.SetProgressMessage("");
                     return;
                 }

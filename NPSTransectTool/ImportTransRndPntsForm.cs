@@ -156,7 +156,6 @@ namespace NPSTransectTool
             int totalOutsideBndy = 0;
             int totalPassed = 0;
             int featureCount = 0;
-            var newOIDs = new List<int>();
             string whereClause = "";
             string demUnits = "";
             double targetLength = -1;
@@ -310,9 +309,10 @@ namespace NPSTransectTool
                 try
                 {
                     //load our features into temp feature class
+                    List<int> newOIDs;
                     LoadTempImportFc(surveyId, firstLoadBatchId, nextTransectId, importFCursor, targetFc,
-                        thisGeoRasterDs, targetLength, ref newOIDs, ref totalInExcluded, ref totalOutsideBndy,
-                        ref totalPassed, demUnits, ref errorMessage);
+                        thisGeoRasterDs, targetLength, out newOIDs, out totalInExcluded, out totalOutsideBndy,
+                        out totalPassed, demUnits, ref errorMessage);
 
                     //if we have less than 2 successful inports, delete the 1 that was inserted
                     if (totalPassed < 2 && importType == esriGeometryType.esriGeometryPoint)
@@ -357,12 +357,12 @@ namespace NPSTransectTool
         }
 
         public void LoadTempImportFc(int SurveyID, int BatchID, int nextTransectId, IFeatureCursor importFCursor,
-            IFeatureClass TempImportFC, IGeoDataset ThisDEM, double TargetLength, ref List<int> newOIDs,
-            ref int totalInExcluded, ref int totalOutsideBndy, ref int totalPassed, string thisDemUnits, ref string errorMessage)
+            IFeatureClass TempImportFC, IGeoDataset ThisDEM, double TargetLength, out List<int> newOIDs,
+            out int totalInExcluded, out int totalOutsideBndy, out int totalPassed, string thisDemUnits, ref string errorMessage)
         {
 
             IFeature importFeature;
-            ESRI.ArcGIS.GeoAnalyst.ISurfaceOp2 npsSurfaceOp = null;
+            ESRI.ArcGIS.GeoAnalyst.ISurfaceOp2 npsSurfaceOp = new ESRI.ArcGIS.GeoAnalyst.RasterSurfaceOpClass();
 
 
             thisDemUnits = thisDemUnits.ToLower();
@@ -385,9 +385,6 @@ namespace NPSTransectTool
             //get insert cursor in the nps feature class we are going to insert into
             IFeatureCursor importToCursor = TempImportFC.Insert(true);
             IFeatureBuffer importToBuffer = TempImportFC.CreateFeatureBuffer();
-
-            if (fType == esriGeometryType.esriGeometryPolyline)
-                npsSurfaceOp = new ESRI.ArcGIS.GeoAnalyst.RasterSurfaceOpClass();
 
 
             //loop through each import feature and import it to it's appropriate featureclass
@@ -477,7 +474,7 @@ namespace NPSTransectTool
                     nextTransectId++;
 
 
-                    var newTrnPolyline = importToBuffer.Shape as IPolyline;
+                    var newTrnPolyline = (IPolyline)importToBuffer.Shape;
 
                     thisFieldIndex = importToBuffer.Fields.FindField("LENGTH_MTR");
                     if (thisFieldIndex > -1) importToBuffer.Value[thisFieldIndex] = newTrnPolyline.Length;
@@ -492,7 +489,8 @@ namespace NPSTransectTool
 
 
                     //clone from point
-                    var tempPoint = ((ESRI.ArcGIS.esriSystem.IClone)newTrnPolyline.FromPoint).Clone() as IPoint;
+                    var tempPoint = (IPoint)((ESRI.ArcGIS.esriSystem.IClone)newTrnPolyline.FromPoint).Clone();
+
 
                     //add from point projected coords
                     thisFieldIndex = importToBuffer.Fields.FindField("PROJTD_X1");
@@ -508,7 +506,7 @@ namespace NPSTransectTool
                     if (thisFieldIndex > -1) importToBuffer.Value[thisFieldIndex] = tempPoint.Y;
 
                     //clone to point
-                    tempPoint = ((ESRI.ArcGIS.esriSystem.IClone)newTrnPolyline.ToPoint).Clone() as IPoint;
+                    tempPoint = (IPoint)((ESRI.ArcGIS.esriSystem.IClone)newTrnPolyline.ToPoint).Clone();
 
 
                     //add to point projected coords
@@ -532,6 +530,7 @@ namespace NPSTransectTool
                     IPolyline cPolyline;
                     double elev;
                     npsSurfaceOp.ContourAsPolyline(ThisDEM, centerPoint, out cPolyline, out elev);
+
 
                     //set elevation in meters
                     thisFieldIndex = importToBuffer.Fields.FindField("ELEV_M");

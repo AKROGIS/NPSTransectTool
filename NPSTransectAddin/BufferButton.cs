@@ -11,6 +11,8 @@ namespace NPSTransectAddin
             try
             {
                 var nps = NPSGlobal.Instance;
+                if (nps.IsInitialized)
+                    return;
                 nps.InitArcMapBindings(ArcMap.Application);
                 nps.Init();
                 Enabled = nps.IsInitialized;

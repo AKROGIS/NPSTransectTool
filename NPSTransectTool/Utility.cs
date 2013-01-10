@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -38,27 +39,22 @@ namespace NPSTransectTool
         /// </summary>
         public static string GetConfigSetting(string OptionName, string ParentElement)
         {
-            NPSGlobal ThisNPSGlobal;
-            XDocument XDoc;
-
             try
             {
-                ThisNPSGlobal = NPSGlobal.Instance;
-
-                XDoc = ThisNPSGlobal.XMLConfig;
+                XDocument XDoc = NPSGlobal.Instance.XMLConfig;
                 if (XDoc == null) return "";
 
                 IEnumerable<XElement> results = from x in XDoc.Descendants(ParentElement)
-                                                where x.Attribute("name").Value.ToLower() == OptionName.ToLower()
+                                                let xAttribute = x.Attribute("name")
+                                                where xAttribute != null && xAttribute.Value.ToLower() == OptionName.ToLower()
                                                 select x;
 
-                foreach (XElement x in results)
-                {
-                    return x.Value;
-                }
+                return results.First().Value;
+
             }
-            catch
+            catch (Exception ex)
             {
+                Debug.Print("Unhandled Exception " + ex.Message);
             }
 
             return "";
@@ -77,27 +73,21 @@ namespace NPSTransectTool
         /// </summary>
         public static void SetConfigSetting(string OptionName, string OptionValue, string ParentElement)
         {
-            NPSGlobal ThisNPSGlobal;
-            XDocument XDoc;
-
             try
             {
-                ThisNPSGlobal = NPSGlobal.Instance;
+                XDocument xDoc = NPSGlobal.Instance.XMLConfig;
+                if (xDoc == null) return;
 
-                XDoc = ThisNPSGlobal.XMLConfig;
-                if (XDoc == null) return;
-
-                IEnumerable<XElement> results = from x in XDoc.Descendants(ParentElement)
-                                                where x.Attribute("name").Value.ToLower() == OptionName.ToLower()
+                IEnumerable<XElement> results = from x in xDoc.Descendants(ParentElement)
+                                                let xAttribute = x.Attribute("name")
+                                                where xAttribute != null && xAttribute.Value.ToLower() == OptionName.ToLower()
                                                 select x;
 
-                foreach (XElement x in results)
-                {
-                    x.Value = OptionValue;
-                }
+                results.First().Value = OptionValue;
             }
-            catch
+            catch(Exception ex)
             {
+                Debug.Print("Unhandled Exception " + ex.Message);
             }
         }
 
@@ -106,20 +96,16 @@ namespace NPSTransectTool
         /// </summary>
         public static void SaveConfigSettings()
         {
-            NPSGlobal ThisNPSGlobal;
-            XDocument XDoc;
-
             try
             {
-                ThisNPSGlobal = NPSGlobal.Instance;
+                XDocument xDoc = NPSGlobal.Instance.XMLConfig;
+                if (xDoc == null) return;
 
-                XDoc = ThisNPSGlobal.XMLConfig;
-                if (XDoc == null) return;
-
-                XDoc.Save(ThisNPSGlobal.XMLConfigFilePath);
+                xDoc.Save(NPSGlobal.Instance.XMLConfigFilePath);
             }
-            catch
+            catch (Exception ex)
             {
+                Debug.Print("Unhandled Exception " + ex.Message);
             }
         }
 
@@ -132,18 +118,16 @@ namespace NPSTransectTool
                                                        ref bool IsSelection,
                                                        ref string DefExpress, ref string ErrorMessage)
         {
-            ILayer MapLayer = null;
-            int SelectionCount = 0;
-            IQueryFilter ThisQFilter = null;
-            ICursor TheSelection = null;
+            int selectionCount = 0;
+            ICursor theSelection;
 
-            ThisQFilter = new QueryFilterClass();
+            IQueryFilter thisQFilter = new QueryFilterClass();
             ResultCount = 0;
             IsSelection = false;
 
             //get the layer on the map for the specified featureclass
-            MapLayer = GetLayerByFeatureClassName(NPSFCName);
-            if (MapLayer == null)
+            ILayer mapLayer = GetLayerByFeatureClassName(NPSFCName);
+            if (mapLayer == null)
             {
                 ErrorMessage = string.Format("No layers on the map from the NPS geodatabase have"
                                              + " a FeatureClass named {0} as their source", NPSFCName);
@@ -151,43 +135,43 @@ namespace NPSTransectTool
             }
 
             //check if there is a query filter set - if so set it in the filter
-            DefExpress = (MapLayer as IFeatureLayerDefinition).DefinitionExpression;
+            DefExpress = ((IFeatureLayerDefinition)mapLayer).DefinitionExpression;
             if (string.IsNullOrEmpty(DefExpress) == false)
-                ThisQFilter.WhereClause = DefExpress;
+                thisQFilter.WhereClause = DefExpress;
 
             //check if we have a selection
-            if ((MapLayer as IFeatureSelection).SelectionSet != null)
-                SelectionCount = (MapLayer as IFeatureSelection).SelectionSet.Count;
+            if (((IFeatureSelection)mapLayer).SelectionSet != null)
+                selectionCount = (mapLayer as IFeatureSelection).SelectionSet.Count;
 
             //if we aren't no supposed to return any if no selection then abort now
-            if (ReturnAllIfNoSelection == false && SelectionCount == 0)
+            if (ReturnAllIfNoSelection == false && selectionCount == 0)
                 return null;
 
             //if no selection, get all the features (filtered by whereclause if a defex was set)
-            if (SelectionCount == 0)
+            if (selectionCount == 0)
             {
                 if (IsUpdateCursor)
-                    TheSelection = (MapLayer as IFeatureLayer).FeatureClass.Update(ThisQFilter, false) as ICursor;
+                    theSelection = ((IFeatureLayer)mapLayer).FeatureClass.Update(thisQFilter, false) as ICursor;
                 else
-                    TheSelection = (MapLayer as IFeatureLayer).FeatureClass.Search(ThisQFilter, false) as ICursor;
+                    theSelection = ((IFeatureLayer)mapLayer).FeatureClass.Search(thisQFilter, false) as ICursor;
 
-                ResultCount = (MapLayer as IFeatureLayer).FeatureClass.FeatureCount(ThisQFilter);
+                ResultCount = ((IFeatureLayer)mapLayer).FeatureClass.FeatureCount(thisQFilter);
             }
                 //if there is a selection get only the selection (filtered by whereclause if a defex was set)
             else
             {
-                ResultCount = SelectionCount;
+                ResultCount = selectionCount;
                 IsSelection = true;
 
                 if (IsUpdateCursor)
-                    (((MapLayer as IFeatureSelection).SelectionSet) as ISelectionSet2).Update(ThisQFilter, false,
-                                                                                              out TheSelection);
+                    ((ISelectionSet2)(((IFeatureSelection)mapLayer).SelectionSet)).Update(thisQFilter, false,
+                                                                                              out theSelection);
                 else
-                    (((MapLayer as IFeatureSelection).SelectionSet) as ISelectionSet2).Search(ThisQFilter, false,
-                                                                                              out TheSelection);
+                    ((ISelectionSet2)(((IFeatureSelection)mapLayer).SelectionSet)).Search(thisQFilter, false,
+                                                                                              out theSelection);
             }
 
-            return TheSelection as IFeatureCursor;
+            return theSelection as IFeatureCursor;
         }
 
         /// <summary>
@@ -195,16 +179,12 @@ namespace NPSTransectTool
         /// </summary>
         public static ISelectionSet2 GetLayerSelection(string NPSFCName, ref string ErrorMessage)
         {
-            ILayer MapLayer = null;
-            int SelectionCount = 0;
-            IQueryFilter ThisQFilter = null;
-
-            ThisQFilter = new QueryFilterClass();
+            int selectionCount = 0;
 
 
             //get the layer on the map for the specified featureclass
-            MapLayer = GetLayerByFeatureClassName(NPSFCName);
-            if (MapLayer == null)
+            ILayer mapLayer = GetLayerByFeatureClassName(NPSFCName);
+            if (mapLayer == null)
             {
                 ErrorMessage = string.Format("No layers on the map from the NPS geodatabase have"
                                              + " a FeatureClass named {0} as their source", NPSFCName);
@@ -213,10 +193,10 @@ namespace NPSTransectTool
 
 
             //check if we have a selection
-            if ((MapLayer as IFeatureSelection).SelectionSet != null)
-                SelectionCount = (MapLayer as IFeatureSelection).SelectionSet.Count;
+            if (((IFeatureSelection)mapLayer).SelectionSet != null)
+                selectionCount = ((IFeatureSelection)mapLayer).SelectionSet.Count;
 
-            if (SelectionCount > 0) return (MapLayer as IFeatureSelection).SelectionSet as ISelectionSet2;
+            if (selectionCount > 0) return ((IFeatureSelection)mapLayer).SelectionSet as ISelectionSet2;
 
             return null;
         }

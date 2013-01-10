@@ -1,11 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
-using System.Data;
-using System.Linq;
+using System.Windows.Forms;
+using System.Xml.Linq;
 using ESRI.ArcGIS.Editor;
-using ESRI.ArcGIS.Geodatabase;
-using ESRI.ArcGIS.Carto;
 using ESRI.ArcGIS.ArcMapUI;
 
 namespace NPSTransectTool
@@ -13,24 +10,15 @@ namespace NPSTransectTool
     public sealed class NPSGlobal
     {
         private static volatile NPSGlobal instance;
-        private static object syncRoot = new System.Object();
+        private static readonly object syncRoot = new Object();
         private ESRI.ArcGIS.Framework.IApplication m_Application;
-        private ESRI.ArcGIS.ArcMapUI.IMxDocument m_MxDoc;
         private ESRI.ArcGIS.Carto.IMap m_Map;
-        private System.Xml.Linq.XDocument m_XMLConfig;
+        private XDocument m_XMLConfig;
         private string m_XMLConfigFilePath;
         private ESRI.ArcGIS.Geodatabase.IWorkspace m_Workspace;
         private string m_DatabasePath;
         private string m_DLLPath;
-        private ESRI.ArcGIS.Editor.IEditor m_Editor;
-        private bool m_ProgramaticFeatureEdit;
-        private TransectToolForm m_MainTransectForm;
-        private System.Windows.Forms.Label m_ProgressLabel;
-        private int m_ProgressStepTotal;
-        private int m_ProgressStepIndex;
-        private Random m_Randomizer;
-
-
+        private IEditor m_Editor;
 
 
         private IDocumentEvents_OpenDocumentEventHandler OnOpenDocument_EvntHndlr;
@@ -64,30 +52,30 @@ namespace NPSTransectTool
 
         public string DLLPath { get { return m_DLLPath; } }
         public string XMLConfigFilePath { get { return m_XMLConfigFilePath; } }
-        public System.Xml.Linq.XDocument XMLConfig { get { return m_XMLConfig; } }
+        public XDocument XMLConfig { get { return m_XMLConfig; } }
         private System.Collections.Specialized.NameValueCollection m_SaveOptionCollection;
         public bool IsInitialized { get { return m_IsInitialized; } }
         public string InitErrorMessage { get { return m_InitErrorMessage; } }
         public ESRI.ArcGIS.Carto.IMap Map { get { return m_Map; } }
         public ESRI.ArcGIS.Geodatabase.IWorkspace Workspace { get { return m_Workspace; } }
         public string DatabasePath { get { return m_DatabasePath; } }
-        public ESRI.ArcGIS.Editor.IEditor Editor { get { return m_Editor; } }
-        public bool ProgramaticFeatureEdit { get { return m_ProgramaticFeatureEdit; } set { m_ProgramaticFeatureEdit = value; } }
-        public TransectToolForm MainTransectForm { get { return m_MainTransectForm; } set { m_MainTransectForm = value; } }
-        public int ProgressStepTotal { get { return m_ProgressStepTotal; } set { m_ProgressStepTotal = value; } }
-        public int ProgressStepIndex { get { return m_ProgressStepIndex; } set { m_ProgressStepIndex = value; } }
-        public Random Randomizer { get { return m_Randomizer; } set { m_Randomizer = value; } }
-        public ESRI.ArcGIS.ArcMapUI.IMxDocument Document { get { return m_MxDoc; } set { m_MxDoc = value; } }
-        public System.Windows.Forms.Label ProgressLabel { get { return m_ProgressLabel; } set { m_ProgressLabel = value; } }
+        public IEditor Editor { get { return m_Editor; } }
+        public bool ProgramaticFeatureEdit { get; set; }
+        public TransectToolForm MainTransectForm { get; set; }
+        public int ProgressStepTotal { get; set; }
+        public int ProgressStepIndex { get; set; }
+        public Random Randomizer { get; set; }
+        public IMxDocument Document { get; set; }
+        public Label ProgressLabel { get; set; }
         public ESRI.ArcGIS.Framework.IApplication Application { get { return m_Application; } }
 
         private NPSGlobal()
         {
             m_IsInitialized = false;
             m_IsInitArcMapBindings = false;
-            m_ProgressStepTotal = -1;
-            m_ProgressStepIndex = -1;
-            m_Randomizer = new Random();//set seed from current time
+            ProgressStepTotal = -1;
+            ProgressStepIndex = -1;
+            Randomizer = new Random();//set seed from current time
         }
 
         /// <summary>
@@ -119,7 +107,7 @@ namespace NPSTransectTool
 
             //reference ArcMap globals
             m_Application = application;
-            m_MxDoc = (ESRI.ArcGIS.ArcMapUI.IMxDocument)m_Application.Document;
+            Document = (IMxDocument)m_Application.Document;
 
             //wireup ArcMap events
             WireDocumentEvents(m_Application.Document);
@@ -138,7 +126,10 @@ namespace NPSTransectTool
 
             //make sure we have an application object
             if (m_Application == null)
+            {
                 m_InitErrorMessage = "Could not get a hold of the ArcMap instance.";
+                return;
+            }
 
             //the toolbar can only work with the specified mxd file
             if (string.IsNullOrEmpty(m_InitErrorMessage))
@@ -157,7 +148,7 @@ namespace NPSTransectTool
 
             //get the currently open  map
             if (string.IsNullOrEmpty(m_InitErrorMessage))
-                m_Map = m_MxDoc.FocusMap;
+                m_Map = Document.FocusMap;
 
             //set global path to dll
             if (string.IsNullOrEmpty(m_InitErrorMessage))
@@ -199,7 +190,7 @@ namespace NPSTransectTool
             m_DatabasePath = null;
             m_DLLPath = null;
             m_Editor = null;
-            m_ProgramaticFeatureEdit = false;
+            ProgramaticFeatureEdit = false;
             m_InitErrorMessage = null;
 
             m_LYR_HORIZON = m_LYR_ANIMALS = m_LYR_TRACKLOG
@@ -213,14 +204,12 @@ namespace NPSTransectTool
         /// </summary>
         private void InitEditor(ref string ErrorMessage)
         {
-            ESRI.ArcGIS.esriSystem.UID pID;
-
             try
             {
                 ////store editor object for use throughout extension
-                pID = new ESRI.ArcGIS.esriSystem.UIDClass();
+                ESRI.ArcGIS.esriSystem.UID pID = new ESRI.ArcGIS.esriSystem.UIDClass();
                 pID.Value = "esriEditor.Editor";
-                m_Editor = (ESRI.ArcGIS.Editor.IEditor)m_Application.FindExtensionByCLSID(pID);
+                m_Editor = (IEditor)m_Application.FindExtensionByCLSID(pID);
             }
             catch (Exception ex)
             {
@@ -246,8 +235,7 @@ namespace NPSTransectTool
         {
             UnwireEditEvents(pEditor);
 
-            OnCreateFeature_EvntHndlr = new IEditEvents_OnCreateFeatureEventHandler
-                (NPSEventHandlers.OnCreateFeature);
+            OnCreateFeature_EvntHndlr = NPSEventHandlers.OnCreateFeature;
             ((IEditEvents_Event)pEditor).OnCreateFeature += OnCreateFeature_EvntHndlr;
         }
 
@@ -259,12 +247,10 @@ namespace NPSTransectTool
         {
             UnWireDocumentEvents(ThisDocument);
 
-            OnCloseDocument_EvntHndlr = new IDocumentEvents_CloseDocumentEventHandler
-                (NPSEventHandlers.CloseMxDocument);
+            OnCloseDocument_EvntHndlr = NPSEventHandlers.CloseMxDocument;
             ((IDocumentEvents_Event)ThisDocument).CloseDocument += OnCloseDocument_EvntHndlr;
 
-            OnOpenDocument_EvntHndlr = new IDocumentEvents_OpenDocumentEventHandler
-              (NPSEventHandlers.OpenMxDocument);
+            OnOpenDocument_EvntHndlr = NPSEventHandlers.OpenMxDocument;
             ((IDocumentEvents_Event)ThisDocument).OpenDocument += OnOpenDocument_EvntHndlr;
 
         }
@@ -286,7 +272,7 @@ namespace NPSTransectTool
             try
             {
                 m_DLLPath = System.Reflection.Assembly.GetAssembly(GetType()).Location;
-                m_DLLPath = m_DLLPath.Substring(0, m_DLLPath.LastIndexOf(@"\"));
+                m_DLLPath = m_DLLPath.Substring(0, m_DLLPath.LastIndexOf(@"\", StringComparison.Ordinal));
             }
             catch (Exception ex)
             {
@@ -298,18 +284,17 @@ namespace NPSTransectTool
         /// find and load the xml configuration file and set the globals that
         /// need to be set from the contents of the file
         /// </summary>
-        private void InitXMLConfig(string DLLPath, ref string ErrorMessage)
+        private void InitXMLConfig(string dllPath, ref string ErrorMessage)
         {
 
             try
             {
-                m_XMLConfigFilePath = System.IO.Path.Combine(DLLPath, "NPSConfig.xml");
-                m_XMLConfig = System.Xml.Linq.XDocument.Load(m_XMLConfigFilePath);
+                m_XMLConfigFilePath = System.IO.Path.Combine(dllPath, "NPSConfig.xml");
+                m_XMLConfig = XDocument.Load(m_XMLConfigFilePath);
             }
             catch (Exception ex)
             {
                 ErrorMessage = "Error occured while parsing XML configuration file. " + ex.Message;
-                return;
             }
         }
 
@@ -379,7 +364,6 @@ namespace NPSTransectTool
             if (string.IsNullOrEmpty(m_LYR_GPSPOINTLOG))
             {
                 ErrorMessage = string.Format("The XML file is missing the name for the GPSPoints layer");
-                return;
             }
 
         }
@@ -387,32 +371,32 @@ namespace NPSTransectTool
         /// <summary>
         /// load collection with saved options from the xml config file
         /// </summary>
-        private void InitSavedOptionsCollection(ref string ErrorMessage)
+        public void InitSavedOptionsCollection(ref string ErrorMessage)
         {
-            IEnumerable<System.Xml.Linq.XElement> SavedOptions;
+            m_SaveOptionCollection = new System.Collections.Specialized.NameValueCollection
+                {
+                    {"RememberLastSurveyID", ""},
+                    {"TransectTotal", ""},
+                    {"StartX", ""},
+                    {"StartY", ""},
+                    {"MaxTransLineLength", ""},
+                    {"BlindAreaBuffer", ""},
+                    {"BufferDistance", ""},
+                    {"BufferFCName", ""},
+                    {"MinTransLineLength", ""},
+                    {"MaxElevation", ""},
+                    {"MaxSlope", ""},
+                    {"MinSlope", ""},
+                    {"ImportDataPath", ""},
+                    {"ExportDataPath", ""},
+                    {"GridPointSpacing", ""},
+                    {"TotalRandomPoints", ""},
+                    {"SurveyID", ""},
+                    {"DemFileLocation", ""}
+                };
 
-            m_SaveOptionCollection = new System.Collections.Specialized.NameValueCollection();
-            m_SaveOptionCollection.Add("RememberLastSurveyID", "");
-            m_SaveOptionCollection.Add("TransectTotal", "");
-            m_SaveOptionCollection.Add("StartX", "");
-            m_SaveOptionCollection.Add("StartY", "");
-            m_SaveOptionCollection.Add("MaxTransLineLength", "");
-            m_SaveOptionCollection.Add("BlindAreaBuffer", "");
-            m_SaveOptionCollection.Add("BufferDistance", "");
-            m_SaveOptionCollection.Add("BufferFCName", "");
-            m_SaveOptionCollection.Add("MinTransLineLength", "");
-            m_SaveOptionCollection.Add("MaxElevation", "");
-            m_SaveOptionCollection.Add("MaxSlope", "");
-            m_SaveOptionCollection.Add("MinSlope", "");
-            m_SaveOptionCollection.Add("ImportDataPath", "");
-            m_SaveOptionCollection.Add("ExportDataPath", "");
-            m_SaveOptionCollection.Add("GridPointSpacing", "");
-            m_SaveOptionCollection.Add("TotalRandomPoints", "");
-            m_SaveOptionCollection.Add("SurveyID", "");
-            m_SaveOptionCollection.Add("DemFileLocation", "");
-
-            SavedOptions = m_XMLConfig.Descendants("NPSConfig");
-            foreach (System.Xml.Linq.XElement ThisOption in SavedOptions)
+            IEnumerable<XElement> SavedOptions = m_XMLConfig.Descendants("NPSConfig");
+            foreach (XElement ThisOption in SavedOptions)
             {
                 for (int Index = 0; Index < m_SaveOptionCollection.Keys.Count; Index++)
                 {
@@ -422,7 +406,7 @@ namespace NPSTransectTool
             }
 
             SavedOptions = m_XMLConfig.Descendants("StoredOptions");
-            foreach (System.Xml.Linq.XElement ThisOption in SavedOptions)
+            foreach (XElement ThisOption in SavedOptions)
             {
                 for (int Index = 0; Index < m_SaveOptionCollection.Keys.Count; Index++)
                 {
@@ -436,38 +420,34 @@ namespace NPSTransectTool
         /// <summary>
         /// obtain the database workspace and path dynamically from the layers in the map
         /// </summary>
-        private void InitDatabase(ESRI.ArcGIS.Carto.IMap ThisMap, ref string ErrorMessage)
+        private void InitDatabase(ESRI.ArcGIS.Carto.IMap thisMap, ref string errorMessage)
         {
-            ESRI.ArcGIS.Carto.ILayer ThisLayer;
-            ESRI.ArcGIS.Geodatabase.IDataset ThisDataset;
-            int LayerCount;
+            int layerCount = thisMap.LayerCount;
 
-            LayerCount = ThisMap.LayerCount;
-
-            for (int LayerIndex = 0; LayerIndex < LayerCount; LayerIndex++)
+            for (int LayerIndex = 0; LayerIndex < layerCount; LayerIndex++)
             {
-                ThisLayer = ThisMap.get_Layer(LayerIndex);
+                ESRI.ArcGIS.Carto.ILayer thisLayer = thisMap.Layer[LayerIndex];
 
-                if (!(ThisLayer is ESRI.ArcGIS.Carto.IFeatureLayer))
+                if (!(thisLayer is ESRI.ArcGIS.Carto.IFeatureLayer))
                     continue;
 
-                if (((ESRI.ArcGIS.Carto.IFeatureLayer)ThisLayer).FeatureClass == null)
+                if (((ESRI.ArcGIS.Carto.IFeatureLayer)thisLayer).FeatureClass == null)
                     continue;
 
-                ThisDataset = (ESRI.ArcGIS.Geodatabase.IDataset)
-                    ((ESRI.ArcGIS.Carto.IFeatureLayer)ThisLayer).FeatureClass;
+                var thisDataset = (ESRI.ArcGIS.Geodatabase.IDataset)
+                                                               ((ESRI.ArcGIS.Carto.IFeatureLayer)thisLayer).FeatureClass;
 
-                if (ThisDataset.Name != m_LYR_GENERATED_TRANSECTS)
+                if (thisDataset.Name != m_LYR_GENERATED_TRANSECTS)
                     continue;
 
-                m_Workspace = ThisDataset.Workspace;
-                m_DatabasePath = ThisDataset.Workspace.PathName;
+                m_Workspace = thisDataset.Workspace;
+                m_DatabasePath = thisDataset.Workspace.PathName;
                 break;
 
             }
 
             if (string.IsNullOrEmpty(m_DatabasePath))
-                ErrorMessage = "Could not find the transect layer used to detect the database.";
+                errorMessage = "Could not find the transect layer used to detect the database.";
 
         }
 

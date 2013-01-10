@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using ESRI.ArcGIS.Geodatabase;
 using ESRI.ArcGIS.Carto;
 using ESRI.ArcGIS.Editor;
@@ -14,74 +11,70 @@ namespace NPSTransectTool
         /// <summary>
         /// handler for Editor feature creation event 
         /// </summary>
-        public static void OnCreateFeature(ESRI.ArcGIS.Geodatabase.IObject pObject)
+        public static void OnCreateFeature(IObject pObject)
         {
-            IFeature ThisFeature = null;
-            NPSGlobal NPS;
-            ILayer CurrentLayer;
-            int SurveyIDIndex, CommentsIndex, ParkIndex, SurveyNameIndex, NextSurveyID;
-            string ErrorMessage = "", SurveyName;
+            string errorMessage = "";
 
-            NPS = NPSGlobal.Instance;
+            NPSGlobal nps = NPSGlobal.Instance;
 
             //make sure the tools are active
-            if (NPS.IsInitialized == false) return;
+            if (nps.IsInitialized == false) return;
 
             //make sure object is IFeature
             if (!(pObject is IFeature))
                 return;
 
             //get created feature
-            ThisFeature = (IFeature)pObject;
+            var thisFeature = (IFeature)pObject;
 
 
             //make sure we have a reference to the local editor
-            if (NPS.Editor == null)
+            if (nps.Editor == null)
                 return;
 
             //get the current layer being edited
-            CurrentLayer = ((IEditLayers)NPS.Editor).CurrentLayer;
+            ILayer currentLayer = ((IEditLayers)nps.Editor).CurrentLayer;
 
             //not really necessary to check
-            if ((CurrentLayer is IFeatureLayer) == false || (CurrentLayer as IFeatureLayer).FeatureClass == null) return;
+            if (currentLayer == null || (currentLayer as IFeatureLayer).FeatureClass == null) return;
 
             //we only care when new survey boundaries are created and created by the user, not in code
-            if (((IDataset)(CurrentLayer as IFeatureLayer).FeatureClass).Name != NPS.LYR_SURVEY_BOUNDARY
-                || NPS.ProgramaticFeatureEdit == true)
+            if (((IDataset)(currentLayer as IFeatureLayer).FeatureClass).Name != nps.LYR_SURVEY_BOUNDARY
+                || nps.ProgramaticFeatureEdit)
                 return;
 
             //get indexes of fields we need to set for the new survey boundary feature
-            SurveyIDIndex = ThisFeature.Fields.FindField("SurveyID");
-            SurveyNameIndex = ThisFeature.Fields.FindField("SurveyName");
-            ParkIndex = ThisFeature.Fields.FindField("Park");
-            CommentsIndex = ThisFeature.Fields.FindField("Comments");
+            int surveyIdIndex = thisFeature.Fields.FindField("SurveyID");
+            int surveyNameIndex = thisFeature.Fields.FindField("SurveyName");
+            int parkIndex = thisFeature.Fields.FindField("Park");
+            int commentsIndex = thisFeature.Fields.FindField("Comments");
 
-            if (SurveyIDIndex == -1 || SurveyNameIndex == -1 || ParkIndex == -1 || CommentsIndex == -1)
+            if (surveyIdIndex == -1 || surveyNameIndex == -1 || parkIndex == -1 || commentsIndex == -1)
                 return;
 
             //try to get the next valid survey id
-            NextSurveyID = Util.NextSurveyID(ref ErrorMessage);
-            if (string.IsNullOrEmpty(ErrorMessage) == false)
+            int nextSurveyId = Util.NextSurveyID(ref errorMessage);
+            if (string.IsNullOrEmpty(errorMessage) == false)
                 return;
 
             //get the user to enter info for the new survey boundary and save the
             //form data to the new survey
-            using (NewSurveyBoundaryForm form = new NewSurveyBoundaryForm())
+            using (var form = new NewSurveyBoundaryForm())
             {
                 form.ckbDontAskAgain.Visible = false;
-                form.txtSurveyID.Text = Convert.ToString(NextSurveyID);
+                form.txtSurveyID.Text = Convert.ToString(nextSurveyId);
                 form.ShowDialog();
 
                 //if we don't have a survey name, the survey id will stand in for the
                 //survey name
-                SurveyName = string.IsNullOrEmpty(form.txtSurveyName.Text.Trim()) ?
-                    Convert.ToString(NextSurveyID) : form.txtSurveyName.Text;
+                string surveyName = string.IsNullOrEmpty(form.txtSurveyName.Text.Trim()) ?
+                                        Convert.ToString(nextSurveyId) : form.txtSurveyName.Text;
 
-                ThisFeature.set_Value(SurveyIDIndex, NextSurveyID);
-                ThisFeature.set_Value(SurveyNameIndex, SurveyName);
-                ThisFeature.set_Value(ParkIndex, form.txtPark.Text);
-                ThisFeature.set_Value(CommentsIndex, form.txtComments.Text);
-                ThisFeature.Store();
+                thisFeature.Value[surveyIdIndex] = nextSurveyId;
+                thisFeature.Value[surveyNameIndex] = surveyName;
+                thisFeature.Value[parkIndex] = form.txtPark.Text;
+                thisFeature.Value[commentsIndex] =  form.txtComments.Text;
+                thisFeature.Store();
             }
         }
 

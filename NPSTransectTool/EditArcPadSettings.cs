@@ -1,10 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
 using System.Windows.Forms;
 using ESRI.ArcGIS.Geodatabase;
 
@@ -13,14 +8,12 @@ namespace NPSTransectTool
     public partial class EditArcPadSettings : Form
     {
         ITable m_ArcPadSSettingsTable;
-        NPSGlobal m_NPS;
         List<string> m_TextList;
         List<int> m_ValuesList;
 
         public EditArcPadSettings()
         {
             InitializeComponent();
-            m_NPS = NPSGlobal.Instance;
         }
 
         private void EditArcPadSettings_Load(object sender, EventArgs e)
@@ -32,7 +25,7 @@ namespace NPSTransectTool
             if (string.IsNullOrEmpty(ErrorMessage) == false)
             {
                 MessageBox.Show(ErrorMessage);
-                this.Close();
+                Close();
                 return;
             }
 
@@ -49,7 +42,7 @@ namespace NPSTransectTool
             string ErrorMessage = "";
 
             ckbEnableHorizonButtonSheep.Checked =
-                Util.GetArcPadDefaultValue("EnableHorizon", ref ErrorMessage) == "Y" ? true : false;
+                Util.GetArcPadDefaultValue("EnableHorizon", ref ErrorMessage) == "Y";
 
         }
 
@@ -63,75 +56,61 @@ namespace NPSTransectTool
 
         private List<string> GetArcPadFields()
         {
-            IFields FieldList;
-            string CurrentFieldName;
-            int FieldCount;
-            List<string> FieldNamesList;
+            var fieldNamesList = new List<string>();
+            IFields fieldList = m_ArcPadSSettingsTable.Fields;
+            int fieldCount = fieldList.FieldCount;
 
-            FieldNamesList = new List<string>();
-            FieldList = m_ArcPadSSettingsTable.Fields;
-            FieldCount = FieldList.FieldCount;
-
-            for (int FieldIndex = 0; FieldIndex < FieldCount; FieldIndex++)
+            for (int fieldIndex = 0; fieldIndex < fieldCount; fieldIndex++)
             {
-                CurrentFieldName = FieldList.get_Field(FieldIndex).Name;
+                string currentFieldName = fieldList.Field[fieldIndex].Name;
 
-                if (CurrentFieldName != "FIELD1" && CurrentFieldName != "OBJECTID"
-                    && CurrentFieldName != "OID" && CurrentFieldName != "OBSTYPE"
-                    && CurrentFieldName != "DISTANCE" && CurrentFieldName != "OBSDIR"
-                    && CurrentFieldName != "DEFNAME" && CurrentFieldName != "DEFVALUE"
-                    && CurrentFieldName != "INCREBYTEN" && CurrentFieldName != "WEATHER"
-                    && FieldList.get_Field(FieldIndex).Type != esriFieldType.esriFieldTypeOID)
+                if (currentFieldName != "FIELD1" && currentFieldName != "OBJECTID"
+                    && currentFieldName != "OID" && currentFieldName != "OBSTYPE"
+                    && currentFieldName != "DISTANCE" && currentFieldName != "OBSDIR"
+                    && currentFieldName != "DEFNAME" && currentFieldName != "DEFVALUE"
+                    && currentFieldName != "INCREBYTEN" && currentFieldName != "WEATHER"
+                    && fieldList.Field[fieldIndex].Type != esriFieldType.esriFieldTypeOID)
                 {
-                    FieldNamesList.Add(CurrentFieldName);
+                    fieldNamesList.Add(currentFieldName);
                 }
             }
 
-            return FieldNamesList;
+            return fieldNamesList;
         }
 
-        private List<string> GetValuesForArcPadField(string FieldName, out List<int> ValuesList)
+        private List<string> GetValuesForArcPadField(string fieldName, out List<int> valuesList)
         {
-            ICursor ThisCursor = null;
-            IRow ThisRow = null;
-            List<string> TextList;
-            string CurrenValue;
-            int FieldIndex, OIDIndex, CurrentOID;
+            IRow thisRow;
 
-            TextList = new List<string>();
-            ValuesList = new List<int>();
+            var textList = new List<string>();
+            valuesList = new List<int>();
 
-            FieldIndex = m_ArcPadSSettingsTable.FindField(FieldName);
-            if (FieldIndex == -1) return TextList;
+            int fieldIndex = m_ArcPadSSettingsTable.FindField(fieldName);
+            if (fieldIndex == -1) return textList;
 
-            OIDIndex = m_ArcPadSSettingsTable.FindField(m_ArcPadSSettingsTable.OIDFieldName);
-            if (OIDIndex == -1) return TextList;
+            int OIDIndex = m_ArcPadSSettingsTable.FindField(m_ArcPadSSettingsTable.OIDFieldName);
+            if (OIDIndex == -1) return textList;
 
-            ThisCursor = m_ArcPadSSettingsTable.Search(null, false);
+            ICursor thisCursor = m_ArcPadSSettingsTable.Search(null, false);
 
-            while ((ThisRow = ThisCursor.NextRow()) != null)
+            while ((thisRow = thisCursor.NextRow()) != null)
             {
-                CurrenValue = (string)Util.SafeConvert(ThisRow.get_Value(FieldIndex), typeof(string));
-                if (string.IsNullOrEmpty(CurrenValue.Trim())) continue;
+                var currentValue = (string)Util.SafeConvert(thisRow.Value[fieldIndex], typeof(string));
+                if (string.IsNullOrEmpty(currentValue.Trim())) continue;
 
-                CurrentOID = (int)Util.SafeConvert(ThisRow.get_Value(OIDIndex), typeof(int));
+                var currentOid = (int)Util.SafeConvert(thisRow.Value[OIDIndex], typeof(int));
 
-                ValuesList.Add(CurrentOID);
-                TextList.Add(CurrenValue);
+                valuesList.Add(currentOid);
+                textList.Add(currentValue);
             }
 
-            ThisCursor = null;
-
-            return TextList;
+            return textList;
         }
 
         private void lstPickList_SelectedIndexChanged(object sender, EventArgs e)
         {
-            string SelFieldName;
-
-
-            SelFieldName = (string)lstPickList.SelectedValue;
-            m_TextList = GetValuesForArcPadField(SelFieldName, out m_ValuesList);
+            var selFieldName = (string)lstPickList.SelectedValue;
+            m_TextList = GetValuesForArcPadField(selFieldName, out m_ValuesList);
 
             lstListOptions.DataSource = m_TextList;
             if (lstListOptions.Items.Count > 0)
@@ -140,20 +119,15 @@ namespace NPSTransectTool
 
         private void btnAdd_Click(object sender, EventArgs e)
         {
-            string SelFieldName, NewValue;
-            IRowBuffer ThisBuffer;
-            ICursor ThisCursor;
-            int SelFieldIndex;
-
-            NewValue = txtNewItem.Text;
+            string NewValue = txtNewItem.Text;
             if (string.IsNullOrEmpty(NewValue.Trim()))
             {
                 MessageBox.Show("Please enter valid text for the new item.");
                 return;
             }
 
-            SelFieldName = (string)lstPickList.SelectedValue;
-            if (string.IsNullOrEmpty(SelFieldName))
+            var selFieldName = (string)lstPickList.SelectedValue;
+            if (string.IsNullOrEmpty(selFieldName))
             {
                 MessageBox.Show("Please select a primary Picklist to add items to.");
                 return;
@@ -161,15 +135,12 @@ namespace NPSTransectTool
 
             try
             {
-                SelFieldIndex = m_ArcPadSSettingsTable.FindField(SelFieldName);
-                ThisCursor = m_ArcPadSSettingsTable.Insert(true);
-                ThisBuffer = m_ArcPadSSettingsTable.CreateRowBuffer();
+                int selFieldIndex = m_ArcPadSSettingsTable.FindField(selFieldName);
+                ICursor thisCursor = m_ArcPadSSettingsTable.Insert(true);
+                IRowBuffer thisBuffer = m_ArcPadSSettingsTable.CreateRowBuffer();
 
-                ThisBuffer.set_Value(SelFieldIndex, NewValue);
-                ThisCursor.InsertRow(ThisBuffer);
-
-                ThisBuffer = null;
-                ThisCursor = null;
+                thisBuffer.Value[selFieldIndex] = NewValue;
+                thisCursor.InsertRow(thisBuffer);
 
                 txtNewItem.Text = "";
 
@@ -183,26 +154,22 @@ namespace NPSTransectTool
 
         private void btnDelete_Click(object sender, EventArgs e)
         {
-            string SelValue, PicklistFieldName;
-            IQueryFilter ThisQueryFilter;
-
-
-            SelValue = (string)lstListOptions.SelectedValue;
-            if (string.IsNullOrEmpty(SelValue))
+            var selValue = (string)lstListOptions.SelectedValue;
+            if (string.IsNullOrEmpty(selValue))
             {
                 MessageBox.Show("Please select a Picklist item to delete.");
                 return;
             }
 
-            PicklistFieldName = lstPickList.SelectedItem.ToString();
+            string picklistFieldName = lstPickList.SelectedItem.ToString();
 
-            ThisQueryFilter = new QueryFilterClass();
-            ThisQueryFilter.WhereClause = PicklistFieldName + "='" + SelValue + "'";
+            IQueryFilter thisQueryFilter = new QueryFilterClass();
+            thisQueryFilter.WhereClause = picklistFieldName + "='" + selValue + "'";
 
 
             try
             {
-                m_ArcPadSSettingsTable.DeleteSearchedRows(ThisQueryFilter);
+                m_ArcPadSSettingsTable.DeleteSearchedRows(thisQueryFilter);
                 lstPickList_SelectedIndexChanged(null, null);
             }
             catch (Exception ex)
@@ -213,16 +180,16 @@ namespace NPSTransectTool
 
         private void btnHelp_Click(object sender, EventArgs e)
         {
-            string HelpText = @"
+            const string helpText = @"
             ** Instructions **
             The Edit ArcPad Defaults Tool is used to edit the defaultvalues.dbf file used by ArcPad. The
             The defaultvalues.dbf file stores the options for the picklists found on the ArcPad sighting forms.
             The defaultvalues.dbf file is packaged with the Survey folder generated after an export. Any
             changes made now to the defaultvalues.dbf file will be included in the next export.";
 
-            using (HelpMessageForm form = new HelpMessageForm())
+            using (var form = new HelpMessageForm())
             {
-                form.txtHelpMessage.Text = HelpText;
+                form.txtHelpMessage.Text = helpText;
                 form.ShowDialog();
             }
         }
@@ -230,8 +197,7 @@ namespace NPSTransectTool
         private void btnClose_Click(object sender, EventArgs e)
         {
             SaveArcPadOptions();
-
-            this.Close();
+            Close();
         }
 
 

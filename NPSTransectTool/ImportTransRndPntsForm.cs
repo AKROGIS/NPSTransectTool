@@ -1,10 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
 using System.Linq;
-using System.Text;
 using System.Windows.Forms;
 using ESRI.ArcGIS.Geodatabase;
 using ESRI.ArcGIS.Geometry;
@@ -13,12 +9,12 @@ namespace NPSTransectTool
 {
     public partial class ImportTransRndPntsForm : Form
     {
-        NPSGlobal m_NPS;
+        readonly NPSGlobal m_NPS;
         Dictionary<string, int> m_SurveysList;
         ISelectionSet2 m_SelectionSet;
-        ESRI.ArcGIS.Geometry.esriGeometryType m_GeometryType;
+        esriGeometryType m_GeometryType;
         IFeatureClass m_ImportFC;
-        TransectToolForm m_TransectToolForm;
+        readonly TransectToolForm m_TransectToolForm;
 
         public ImportTransRndPntsForm(TransectToolForm form)
         {
@@ -50,96 +46,91 @@ namespace NPSTransectTool
 
         private void cboSurveyList_SelectedIndexChanged(object sender, EventArgs e)
         {
-            int SurveyID;
-            string FCName, ErrorMessage = "";
-            List<string> BatchIDs;
+            string errorMessage = "";
 
-
-            FCName = m_GeometryType == ESRI.ArcGIS.Geometry.esriGeometryType.esriGeometryPolyline
-                ? m_NPS.LYR_GENERATED_TRANSECTS : m_NPS.LYR_RANDOMPOINTS;
+            string fcName = m_GeometryType == esriGeometryType.esriGeometryPolyline
+                                ? m_NPS.LYR_GENERATED_TRANSECTS : m_NPS.LYR_RANDOMPOINTS;
 
             cboBatches.DataSource = null;
 
-            SurveyID = m_SurveysList[(string)cboSurveysList.Text];
+            int surveyId = m_SurveysList[cboSurveysList.Text];
 
-            if (SurveyID == -1) return;
+            if (surveyId == -1) return;
 
-            BatchIDs = Util.GetBatchIDs(FCName, Convert.ToString(SurveyID), ref ErrorMessage);
-            if (BatchIDs.Count == 0) BatchIDs.Add("1");
+            List<string> batchIDs = Util.GetBatchIDs(fcName, Convert.ToString(surveyId), ref errorMessage);
+            if (batchIDs.Count == 0) batchIDs.Add("1");
 
-            cboBatches.DataSource = BatchIDs;
+            cboBatches.DataSource = batchIDs;
 
-            if (string.IsNullOrEmpty(ErrorMessage) == false)
-                MessageBox.Show(ErrorMessage);
+            if (string.IsNullOrEmpty(errorMessage) == false)
+                MessageBox.Show(errorMessage);
         }
 
         private void btnClose_Click(object sender, EventArgs e)
         {
-            this.Close();
+            Close();
         }
 
         private void btnBrowse_Click(object sender, EventArgs e)
         {
-            string ErrorMessage = "";
-            bool AllOkay = true;
-            ISpatialReference DefaultSpatRef, ImportSFSpatRef;
-            bool Cancelled = false;
-            string NewPath;
+            string errorMessage = "";
+            bool allOkay = true;
+            bool cancelled = false;
 
-            NewPath = Util.OpenESRIDialog(txtBrowseFile.Text, ref Cancelled);
-            if (Cancelled == false)
-                txtBrowseFile.Text = NewPath;
+            string newPath = Util.OpenESRIDialog(txtBrowseFile.Text, ref cancelled);
+            if (cancelled == false)
+                txtBrowseFile.Text = newPath;
             else
                 return;
 
             //make sure we got the shapefile
-            m_ImportFC = Util.GetShapeFile(txtBrowseFile.Text, ref ErrorMessage);
-            if (string.IsNullOrEmpty(ErrorMessage) == false)
+            m_ImportFC = Util.GetShapeFile(txtBrowseFile.Text, ref errorMessage);
+            if (string.IsNullOrEmpty(errorMessage) == false)
             {
-                MessageBox.Show(ErrorMessage);
-                AllOkay = false;
+                MessageBox.Show(errorMessage);
+                allOkay = false;
             }
 
-            if (AllOkay)
+            if (allOkay)
             {
                 //make sure the shapefile is the right shape type
-                if (m_ImportFC.ShapeType != ESRI.ArcGIS.Geometry.esriGeometryType.esriGeometryPoint
-                    && m_ImportFC.ShapeType != ESRI.ArcGIS.Geometry.esriGeometryType.esriGeometryPolyline)
+                if (m_ImportFC.ShapeType != esriGeometryType.esriGeometryPoint
+                    && m_ImportFC.ShapeType != esriGeometryType.esriGeometryPolyline)
                 {
                     MessageBox.Show("The selected shapefile must be a point if random points are being "
                     + "imported or polylines if transects are being imported");
-                    AllOkay = false;
+                    allOkay = false;
                 }
             }
 
-            if (AllOkay)
+            if (allOkay)
             {
                 //make sure that the shape file has the same coordinate system as the default nps coordinate system
-                ImportSFSpatRef = ((IGeoDataset)m_ImportFC).SpatialReference;
-                DefaultSpatRef = Util.GetDefaultSpatialReference();
+                ISpatialReference importSfSpatRef = ((IGeoDataset)m_ImportFC).SpatialReference;
+                ISpatialReference defaultSpatRef = Util.GetDefaultSpatialReference();
 
-                if (Util.CompareSpatialReference(DefaultSpatRef, ImportSFSpatRef) == false)
+                if (Util.CompareSpatialReference(defaultSpatRef, importSfSpatRef) == false)
                 {
-                    MessageBox.Show("(Err) The selected shape file has the coordinate system '" + ImportSFSpatRef.Name
+                    MessageBox.Show("(Err) The selected shape file has the coordinate system '" + importSfSpatRef.Name
                    + "' which is different from that of the NPS database coordinate system which is '"
-                   + DefaultSpatRef.Name + "'.");
-                    AllOkay = false;
+                   + defaultSpatRef.Name + "'.");
+                    allOkay = false;
 
                 }
             }
 
             //if something went run, clea shapefile
-            if (AllOkay == false) m_ImportFC = null;
+            if (allOkay == false) m_ImportFC = null;
 
             //if the shapefile was invalid and we have no selection, turn off ddls
-            if (AllOkay == false && m_SelectionSet == null)
+            if (allOkay == false && m_SelectionSet == null)
             {
 
                 cboBatches.Enabled = false;
                 cboSurveysList.Enabled = false;
             }
 
-            if (AllOkay)
+            if (allOkay)
             {
                 //if everything is good uptil this point, enable dropdownlists
                 cboBatches.Enabled = true;
@@ -150,422 +141,420 @@ namespace NPSTransectTool
 
         private void btnImport_Click(object sender, EventArgs e)
         {
-            int SurveyID = -1, FirstLoadBatchID = -1, BatchID = -1, NextTransectID = -1;
-            string DemFilePath = "", ErrorMessage = "", ResultMessage = "", InternalError = "";
-            esriGeometryType ImportType = esriGeometryType.esriGeometryNull;
-            IFeatureCursor ImportFCursor = null;
-            ICursor ImportCursor = null;
-            IFeatureClass TargetFC = null;
-            IGeoDataset ThisGeoRasterDS = null;
-            int TotalInExcluded = 0, TotalOutsideBndy = 0, TotalPassed = 0, FeatureCount = 0;
-            List<int> NewOIDs = new List<int>();
-            string WhereClause = "",DEMUnits="";
-            double TargetLength = -1;
+            int surveyId = -1;
+            int firstLoadBatchId = -1;
+            int batchId = -1;
+            int nextTransectId = -1;
+            string errorMessage = "";
+            string resultMessage = "";
+            string internalError = "";
+            var importType = esriGeometryType.esriGeometryNull;
+            IFeatureCursor importFCursor = null;
+            IFeatureClass targetFc = null;
+            IGeoDataset thisGeoRasterDs = null;
+            int totalInExcluded = 0;
+            int totalOutsideBndy = 0;
+            int totalPassed = 0;
+            int featureCount = 0;
+            var newOIDs = new List<int>();
+            string whereClause = "";
+            string demUnits="";
+            double targetLength = -1;
 
 
             //make sure we have a selection set or a shapefule
             if (m_ImportFC == null && m_SelectionSet == null)
             {
-                ErrorMessage = @"No Random Points or Transects have been set for import. To select 
+                errorMessage = @"No Random Points or Transects have been set for import. To select 
                                 Random Points or Transects for import either select points or
                                 polylines from the map or browse to a Shapefile containing points 
                                 or polylines.";
             }
 
             //get the batchid and surveyid for the new features
-            if (string.IsNullOrEmpty(ErrorMessage))
+            if (string.IsNullOrEmpty(errorMessage))
             {
                 if (Util.IsNumeric(cboBatches.Text) == false)
-                    ErrorMessage = "Please select a batch id to import to.";
+                    errorMessage = "Please select a batch id to import to.";
             }
 
-            if (string.IsNullOrEmpty(ErrorMessage))
+            if (string.IsNullOrEmpty(errorMessage))
             {
-                BatchID = Convert.ToInt32(cboBatches.Text);
+                batchId = Convert.ToInt32(cboBatches.Text);
 
-                SurveyID = m_SurveysList[(string)cboSurveysList.Text];
-                if (SurveyID == -1) ErrorMessage = "Please select a survey to import to.";
+                surveyId = m_SurveysList[cboSurveysList.Text];
+                if (surveyId == -1) errorMessage = "Please select a survey to import to.";
 
             }
 
 
             //make sure we have a DEM file set
-            if (string.IsNullOrEmpty(ErrorMessage))
+            if (string.IsNullOrEmpty(errorMessage))
             {
-                DemFilePath = m_TransectToolForm.txtDemFileLocation.Text.Trim();
+                string DemFilePath = m_TransectToolForm.txtDemFileLocation.Text.Trim();
                 if (DemFilePath == "")
-                    ErrorMessage = "Please set a DEM file on the Config tab that "
+                    errorMessage = "Please set a DEM file on the Config tab that "
                     + "can be used for the specified Survey.";
             }
 
-            if (string.IsNullOrEmpty(ErrorMessage))
+            if (string.IsNullOrEmpty(errorMessage))
             {
                 if (m_TransectToolForm.cboDEMFileUnits.SelectedIndex == 0)
-                    ErrorMessage = ErrorMessage + "Please set a valid unit for the DEM file from the Config tab.";
+                    errorMessage = errorMessage + "Please set a valid unit for the DEM file from the Config tab.";
             }
 
             //validate data
-            if (string.IsNullOrEmpty(ErrorMessage))
+            if (string.IsNullOrEmpty(errorMessage))
             {
                 if (m_ImportFC != null)
-                    ImportType = m_ImportFC.ShapeType;
+                    importType = m_ImportFC.ShapeType;
                 if (m_SelectionSet != null)
-                    ImportType = m_GeometryType;
+                    importType = m_GeometryType;
 
                 if (m_ImportFC != null)
-                    FeatureCount = m_ImportFC.FeatureCount(null);
+                    featureCount = m_ImportFC.FeatureCount(null);
                 if (m_SelectionSet != null)
-                    FeatureCount = m_SelectionSet.Count;
+                    featureCount = m_SelectionSet.Count;
             }
 
 
-            if (string.IsNullOrEmpty(ErrorMessage))
-                if (ImportType == esriGeometryType.esriGeometryPoint)
-                    if (FeatureCount < 2) ErrorMessage = "A minimum of 2 random points must be imported at one time.";
+            if (string.IsNullOrEmpty(errorMessage))
+                if (importType == esriGeometryType.esriGeometryPoint)
+                    if (featureCount < 2) errorMessage = "A minimum of 2 random points must be imported at one time.";
 
 
-            if (string.IsNullOrEmpty(ErrorMessage))
+            if (string.IsNullOrEmpty(errorMessage))
             {
-                if (ImportType == esriGeometryType.esriGeometryPolyline)
+                if (importType == esriGeometryType.esriGeometryPolyline)
                     if (Util.IsNumeric(txtTargetLength.Text) == false)
-                        ErrorMessage = "Please specify a valid Target Length for importing transects.";
+                        errorMessage = "Please specify a valid Target Length for importing transects.";
                     else
-                        TargetLength = Convert.ToDouble(txtTargetLength.Text);
+                        targetLength = Convert.ToDouble(txtTargetLength.Text);
 
             }
 
             //get cursor on features to import
-            if (string.IsNullOrEmpty(ErrorMessage))
+            if (string.IsNullOrEmpty(errorMessage))
             {
                 if (m_ImportFC != null)
-                    ImportFCursor = m_ImportFC.Search(null, false);
+                    importFCursor = m_ImportFC.Search(null, false);
                 if (m_SelectionSet != null)
+                {
+                    ICursor ImportCursor;
                     m_SelectionSet.Search(null, false, out ImportCursor);
+                }
             }
 
 
-            if (string.IsNullOrEmpty(ErrorMessage))
+            if (string.IsNullOrEmpty(errorMessage))
             {
-                if (ImportType == esriGeometryType.esriGeometryPolyline)
-                    TargetFC = Util.GetFeatureClass(m_NPS.LYR_GENERATED_TRANSECTS, ref ErrorMessage);
+                if (importType == esriGeometryType.esriGeometryPolyline)
+                    targetFc = Util.GetFeatureClass(m_NPS.LYR_GENERATED_TRANSECTS, ref errorMessage);
 
-                if (ImportType == esriGeometryType.esriGeometryPoint)
-                    TargetFC = Util.GetFeatureClass(m_NPS.LYR_RANDOMPOINTS, ref ErrorMessage);
+                if (importType == esriGeometryType.esriGeometryPoint)
+                    targetFc = Util.GetFeatureClass(m_NPS.LYR_RANDOMPOINTS, ref errorMessage);
             }
 
 
-            if (string.IsNullOrEmpty(ErrorMessage))
+            if (string.IsNullOrEmpty(errorMessage))
             {
                 m_NPS.ProgressLabel = lblProgressLabel;
-                Util.SetProgressMessage("Clipping Raster", ((ImportType == esriGeometryType.esriGeometryPoint) ? 7 : 2));
+                Util.SetProgressMessage("Clipping Raster", ((importType == esriGeometryType.esriGeometryPoint) ? 7 : 2));
 
 
                 //get the DEM specified by the DEM filepath field
-                ThisGeoRasterDS = Util.OpenRasterDataset(m_NPS.MainTransectForm.txtDemFileLocation.Text,
-                    ref ErrorMessage) as IGeoDataset;
+                thisGeoRasterDs = Util.OpenRasterDataset(m_NPS.MainTransectForm.txtDemFileLocation.Text,
+                    ref errorMessage) as IGeoDataset;
 
-                if (string.IsNullOrEmpty(ErrorMessage) == false)
-                    ErrorMessage = ErrorMessage + "\r\n\r\nPlease set a valid DEM file from the Config tab.";
+                if (string.IsNullOrEmpty(errorMessage) == false)
+                    errorMessage = errorMessage + "\r\n\r\nPlease set a valid DEM file from the Config tab.";
             }
 
-            if (string.IsNullOrEmpty(ErrorMessage))
+            if (string.IsNullOrEmpty(errorMessage))
             {
                 if (m_NPS.MainTransectForm.cboDEMFileUnits.SelectedIndex == 0)
-                    ErrorMessage = "Please set a valid unit for the DEM file on the Config tab.";
+                    errorMessage = "Please set a valid unit for the DEM file on the Config tab.";
                 else
-                    DEMUnits = m_NPS.MainTransectForm.cboDEMFileUnits.Text;
+                    demUnits = m_NPS.MainTransectForm.cboDEMFileUnits.Text;
             }
 
             //clip the dem file to the size of the survey area
-            if (string.IsNullOrEmpty(ErrorMessage))
-                ThisGeoRasterDS = Util.ClipRasterByBndPoly(ThisGeoRasterDS, Convert.ToString(SurveyID), ref ErrorMessage);
+            if (string.IsNullOrEmpty(errorMessage))
+                thisGeoRasterDs = Util.ClipRasterByBndPoly(thisGeoRasterDs, Convert.ToString(surveyId), ref errorMessage);
 
 
-            if (string.IsNullOrEmpty(ErrorMessage))
+            if (string.IsNullOrEmpty(errorMessage))
             {
                 //points will have a temp batch id since they will be updated later
-                if (ImportType == esriGeometryType.esriGeometryPoint) FirstLoadBatchID = 9999;
-                if (ImportType == esriGeometryType.esriGeometryPolyline) FirstLoadBatchID = BatchID;
+                if (importType == esriGeometryType.esriGeometryPoint) firstLoadBatchId = 9999;
+                if (importType == esriGeometryType.esriGeometryPolyline) firstLoadBatchId = batchId;
 
                 //tranects will need to have a unique transect id
-                if (ImportType == esriGeometryType.esriGeometryPolyline)
+                if (importType == esriGeometryType.esriGeometryPolyline)
                 {
                     //get next available transect id
-                    NextTransectID = Util.GetHighestFieldValue(m_NPS.LYR_GENERATED_TRANSECTS,
-                        "TransectID", "SurveyID=" + SurveyID, ref ErrorMessage);
-                    if (string.IsNullOrEmpty(ErrorMessage) == false) return;
-                    NextTransectID++;
+                    nextTransectId = Util.GetHighestFieldValue(m_NPS.LYR_GENERATED_TRANSECTS,
+                        "TransectID", "SurveyID=" + surveyId, ref errorMessage);
+                    if (string.IsNullOrEmpty(errorMessage) == false) return;
+                    nextTransectId++;
                 }
 
             }
 
-            if (string.IsNullOrEmpty(ErrorMessage))
+            if (string.IsNullOrEmpty(errorMessage))
             {
-                Util.SetProgressMessage("Importing" + ((ImportType == esriGeometryType.esriGeometryPoint)
+                Util.SetProgressMessage("Importing" + ((importType == esriGeometryType.esriGeometryPoint)
                 ? " Random Points" : " Transects"));
 
 
                 try
                 {
                     //load our features into temp feature class
-                    LoadTempImportFC(SurveyID, FirstLoadBatchID, NextTransectID, ImportFCursor, TargetFC, 
-                        ThisGeoRasterDS, TargetLength, ref NewOIDs,ref TotalInExcluded, ref TotalOutsideBndy, 
-                        ref TotalPassed,DEMUnits, ref ErrorMessage);
+                    LoadTempImportFc(surveyId, firstLoadBatchId, nextTransectId, importFCursor, targetFc, 
+                        thisGeoRasterDs, targetLength, ref newOIDs,ref totalInExcluded, ref totalOutsideBndy, 
+                        ref totalPassed,demUnits, ref errorMessage);
 
                     //if we have less than 2 successful inports, delete the 1 that was inserted
-                    if (TotalPassed < 2 && ImportType == esriGeometryType.esriGeometryPoint)
+                    if (totalPassed < 2 && importType == esriGeometryType.esriGeometryPoint)
                     {
-                        foreach (int OID in NewOIDs)
-                            WhereClause += "or " + TargetFC.OIDFieldName + "=" + OID;
+                        whereClause = newOIDs.Aggregate(whereClause, (current, OID) => current + ("or " + targetFc.OIDFieldName + "=" + OID));
 
-                        if (WhereClause != string.Empty) WhereClause = WhereClause.Substring(3);
-                        Util.DeleteFeatures(TargetFC, WhereClause, ref InternalError);
+                        if (whereClause != string.Empty) whereClause = whereClause.Substring(3);
+                        Util.DeleteFeatures(targetFc, whereClause, ref internalError);
 
-                        ErrorMessage = "A minimum of 2 random points must be evaludated succesfully to carry out import.";
+                        errorMessage = "A minimum of 2 random points must be evaludated succesfully to carry out import.";
                     }
                 }
                 catch (Exception ex)
                 {
-                    ErrorMessage = "Error occured. " + ErrorMessage + ". " + ex.Message;
+                    errorMessage = "Error occured. " + errorMessage + ". " + ex.Message;
                 }
 
-                ResultMessage = "\r\n\r\nTotal in excluded areas = " + TotalInExcluded
-                        + "\r\nTotal outside survey boundary = " + TotalOutsideBndy
-                        + "\r\nTotal passed = " + TotalPassed;
+                resultMessage = "\r\n\r\nTotal in excluded areas = " + totalInExcluded
+                        + "\r\nTotal outside survey boundary = " + totalOutsideBndy
+                        + "\r\nTotal passed = " + totalPassed;
             }
 
 
-            if (string.IsNullOrEmpty(ErrorMessage))
-                if (ImportType == esriGeometryType.esriGeometryPoint)
-                    Util.AddZValuesToPoints(SurveyID, BatchID, FirstLoadBatchID, ThisGeoRasterDS, DEMUnits, ref ErrorMessage);
+            if (string.IsNullOrEmpty(errorMessage))
+                if (importType == esriGeometryType.esriGeometryPoint)
+                    Util.AddZValuesToPoints(surveyId, batchId, firstLoadBatchId, thisGeoRasterDs, demUnits, ref errorMessage);
 
                 
 
 
             Util.SetProgressMessage("");
 
-            if (string.IsNullOrEmpty(ErrorMessage))
+            if (string.IsNullOrEmpty(errorMessage))
             {
-                MessageBox.Show("Completed Successfully" + ResultMessage);
-                this.Close();
+                MessageBox.Show("Completed Successfully" + resultMessage);
+                Close();
             }
             else
-                MessageBox.Show(ErrorMessage + ResultMessage);
+                MessageBox.Show(errorMessage + resultMessage);
 
 
         }
 
-        public void LoadTempImportFC(int SurveyID, int BatchID, int NextTransectID, IFeatureCursor ImportFCursor,
-            IFeatureClass TempImportFC, IGeoDataset ThisDEM, double TargetLength, ref List<int> NewOIDs,
-            ref int TotalInExcluded, ref int TotalOutsideBndy, ref int TotalPassed,string ThisDEMUnits, ref string ErrorMessage)
+        public void LoadTempImportFc(int SurveyID, int BatchID, int nextTransectId, IFeatureCursor importFCursor,
+            IFeatureClass TempImportFC, IGeoDataset ThisDEM, double TargetLength, ref List<int> newOIDs,
+            ref int totalInExcluded, ref int totalOutsideBndy, ref int totalPassed,string thisDemUnits, ref string errorMessage)
         {
 
-            IFeature ImportFeature;
-            IFeatureCursor ImportToCursor = null;
-            IFeatureBuffer ImportToBuffer = null;
-            esriGeometryType FType;
-            bool IsInExcludedAreas, IsInBndPoly;
+            IFeature importFeature;
             ESRI.ArcGIS.GeoAnalyst.ISurfaceOp2 npsSurfaceOp = null;
-            int ThisFieldIndex;
-            IPoint TempPoint;
-            IPolyline NewTrnPolyline;
-            double Elev;
-            IPolyline CPolyline;
-            IPoint centerPoint;
-            IFeatureClass ExclPolyFC, BndPolyFC;
 
 
-            ThisDEMUnits = ThisDEMUnits.ToLower();
-            NewOIDs = new List<int>();
-            TotalInExcluded = 0;
-            TotalOutsideBndy = 0;
-            TotalPassed = 0;
+            thisDemUnits = thisDemUnits.ToLower();
+            newOIDs = new List<int>();
+            totalInExcluded = 0;
+            totalOutsideBndy = 0;
+            totalPassed = 0;
 
-            ExclPolyFC = Util.GetFeatureClass(m_NPS.LYR_EXCLUDED_AREAS, ref ErrorMessage);
-            if (string.IsNullOrEmpty(ErrorMessage) == false) return;
+            IFeatureClass ExclPolyFC = Util.GetFeatureClass(m_NPS.LYR_EXCLUDED_AREAS, ref errorMessage);
+            if (string.IsNullOrEmpty(errorMessage) == false) return;
 
-            BndPolyFC = Util.GetFeatureClass(m_NPS.LYR_SURVEY_BOUNDARY, ref ErrorMessage);
-            if (string.IsNullOrEmpty(ErrorMessage) == false) return;
+            IFeatureClass BndPolyFC = Util.GetFeatureClass(m_NPS.LYR_SURVEY_BOUNDARY, ref errorMessage);
+            if (string.IsNullOrEmpty(errorMessage) == false) return;
 
 
            
 
-            FType = TempImportFC.ShapeType;
+            esriGeometryType fType = TempImportFC.ShapeType;
 
             //get insert cursor in the nps feature class we are going to insert into
-            ImportToCursor = TempImportFC.Insert(true);
-            ImportToBuffer = TempImportFC.CreateFeatureBuffer();
+            IFeatureCursor importToCursor = TempImportFC.Insert(true);
+            IFeatureBuffer importToBuffer = TempImportFC.CreateFeatureBuffer();
 
-            if (FType == esriGeometryType.esriGeometryPolyline)
+            if (fType == esriGeometryType.esriGeometryPolyline)
                 npsSurfaceOp = new ESRI.ArcGIS.GeoAnalyst.RasterSurfaceOpClass();
 
 
             //loop through each import feature and import it to it's appropriate featureclass
-            while ((ImportFeature = ImportFCursor.NextFeature()) != null)
+            while ((importFeature = importFCursor.NextFeature()) != null)
             {
                 //make sure the shape is valid
-                if (ImportFeature.ShapeCopy == null)
+                if (importFeature.ShapeCopy == null)
                 {
-                    TotalOutsideBndy++;
+                    totalOutsideBndy++;
                     continue;
                 }
 
 
-                if (FType == esriGeometryType.esriGeometryPoint)
+                bool isInExcludedAreas;
+                bool isInBndPoly;
+                if (fType == esriGeometryType.esriGeometryPoint)
                 {
 
                     //check if rand point  falls in excluded areas
-                    IsInExcludedAreas = Util.HasRelationshipWithFC(ImportFeature.ShapeCopy, esriSpatialRelEnum.esriSpatialRelWithin,
+                    isInExcludedAreas = Util.HasRelationshipWithFC(importFeature.ShapeCopy, esriSpatialRelEnum.esriSpatialRelWithin,
                         ExclPolyFC, "SurveyID=" + SurveyID);
 
                     //if point is in excluded areas, don't add
-                    if (IsInExcludedAreas)
+                    if (isInExcludedAreas)
                     {
-                        TotalInExcluded++;
+                        totalInExcluded++;
                         continue;
                     }
 
                     //check if  rand point is within boundary
-                    IsInBndPoly = Util.HasRelationshipWithFC(ImportFeature.ShapeCopy, esriSpatialRelEnum.esriSpatialRelWithin,
+                    isInBndPoly = Util.HasRelationshipWithFC(importFeature.ShapeCopy, esriSpatialRelEnum.esriSpatialRelWithin,
                         BndPolyFC, "SurveyID=" + SurveyID);
 
                     //if random point is not in boundary, dont add it
-                    if (IsInBndPoly == false)
+                    if (isInBndPoly == false)
                     {
-                        TotalOutsideBndy++;
+                        totalOutsideBndy++;
                         continue;
                     }
 
                 }
 
-                if (FType == esriGeometryType.esriGeometryPolyline)
+                if (fType == esriGeometryType.esriGeometryPolyline)
                 {
 
                     //check if new line falls in excluded areas
-                    IsInExcludedAreas = Util.HasRelationshipWithFC(ImportFeature.ShapeCopy, esriSpatialRelEnum.esriSpatialRelCrosses,
+                    isInExcludedAreas = Util.HasRelationshipWithFC(importFeature.ShapeCopy, esriSpatialRelEnum.esriSpatialRelCrosses,
                          ExclPolyFC, "SurveyID=" + SurveyID);
 
                     //if point is in excluded areas, don't add
-                    if (IsInExcludedAreas)
+                    if (isInExcludedAreas)
                     {
-                        TotalInExcluded++;
+                        totalInExcluded++;
                         continue;
                     }
 
                     //check if new line is within in boundary
-                    IsInBndPoly = Util.HasRelationshipWithFC(ImportFeature.ShapeCopy, esriSpatialRelEnum.esriSpatialRelWithin,
+                    isInBndPoly = Util.HasRelationshipWithFC(importFeature.ShapeCopy, esriSpatialRelEnum.esriSpatialRelWithin,
                          BndPolyFC, "SurveyID=" + SurveyID);
 
                     //if random point is not in boundary, dont add it
-                    if (IsInBndPoly == false)
+                    if (isInBndPoly == false)
                     {
-                        TotalOutsideBndy++;
+                        totalOutsideBndy++;
                         continue;
                     }
 
                 }
 
-                TotalPassed++;
+                totalPassed++;
 
                 //add feature to temp feature class
-                ImportToBuffer.Shape = ImportFeature.ShapeCopy;
-                ImportToBuffer.set_Value(ImportToBuffer.Fields.FindField("SurveyID"), SurveyID);
-                ImportToBuffer.set_Value(ImportToBuffer.Fields.FindField("BATCH_ID"), BatchID);
+                importToBuffer.Shape = importFeature.ShapeCopy;
+                importToBuffer.Value[importToBuffer.Fields.FindField("SurveyID")] = SurveyID;
+                importToBuffer.Value[importToBuffer.Fields.FindField("BATCH_ID")] = BatchID;
 
-                if (FType == esriGeometryType.esriGeometryPolyline)
+                if (fType == esriGeometryType.esriGeometryPolyline)
                 {
 
 
-                    ThisFieldIndex = ImportToBuffer.Fields.FindField("Flown");
-                    if (ThisFieldIndex > -1) ImportToBuffer.set_Value(ImportToBuffer.Fields.FindField("Flown"), "N");
+                    int thisFieldIndex = importToBuffer.Fields.FindField("Flown");
+                    if (thisFieldIndex > -1) importToBuffer.Value[importToBuffer.Fields.FindField("Flown")] =  "N";
 
-                    ThisFieldIndex = ImportToBuffer.Fields.FindField("TransectID");
-                    if (ThisFieldIndex > -1) ImportToBuffer.set_Value(ImportToBuffer.Fields.FindField("TransectID"), NextTransectID);
+                    thisFieldIndex = importToBuffer.Fields.FindField("TransectID");
+                    if (thisFieldIndex > -1) importToBuffer.Value[importToBuffer.Fields.FindField("TransectID")] = nextTransectId;
 
-                    NextTransectID++;
+                    nextTransectId++;
 
 
-                    NewTrnPolyline = ImportToBuffer.Shape as IPolyline;
+                    var newTrnPolyline = importToBuffer.Shape as IPolyline;
 
-                    ThisFieldIndex = ImportToBuffer.Fields.FindField("LENGTH_MTR");
-                    if (ThisFieldIndex > -1) ImportToBuffer.set_Value(ThisFieldIndex, NewTrnPolyline.Length);
+                    thisFieldIndex = importToBuffer.Fields.FindField("LENGTH_MTR");
+                    if (thisFieldIndex > -1) importToBuffer.Value[thisFieldIndex] = newTrnPolyline.Length;
 
                     //add the name of the default projection
-                    ThisFieldIndex = ImportToBuffer.Fields.FindField("PROJECTION");
-                    if (ThisFieldIndex > -1) ImportToBuffer.set_Value(ThisFieldIndex, NewTrnPolyline.SpatialReference.Name);
+                    thisFieldIndex = importToBuffer.Fields.FindField("PROJECTION");
+                    if (thisFieldIndex > -1) importToBuffer.Value[thisFieldIndex] =  newTrnPolyline.SpatialReference.Name;
 
-                    ThisFieldIndex = ImportToBuffer.Fields.FindField("TARGETLEN");
-                    if (ThisFieldIndex > -1) ImportToBuffer.set_Value(ThisFieldIndex, TargetLength);
+                    thisFieldIndex = importToBuffer.Fields.FindField("TARGETLEN");
+                    if (thisFieldIndex > -1) importToBuffer.Value[thisFieldIndex] = TargetLength;
 
 
 
                     //clone from point
-                    TempPoint = ((ESRI.ArcGIS.esriSystem.IClone)NewTrnPolyline.FromPoint).Clone() as IPoint;
+                    var tempPoint = ((ESRI.ArcGIS.esriSystem.IClone)newTrnPolyline.FromPoint).Clone() as IPoint;
 
                     //add from point projected coords
-                    ThisFieldIndex = ImportToBuffer.Fields.FindField("PROJTD_X1");
-                    if (ThisFieldIndex > -1) ImportToBuffer.set_Value(ThisFieldIndex, TempPoint.X);
-                    ThisFieldIndex = ImportToBuffer.Fields.FindField("PROJTD_Y1");
-                    if (ThisFieldIndex > -1) ImportToBuffer.set_Value(ThisFieldIndex, TempPoint.Y);
+                    thisFieldIndex = importToBuffer.Fields.FindField("PROJTD_X1");
+                    if (thisFieldIndex > -1) importToBuffer.Value[thisFieldIndex] = tempPoint.X;
+                    thisFieldIndex = importToBuffer.Fields.FindField("PROJTD_Y1");
+                    if (thisFieldIndex > -1) importToBuffer.Value[thisFieldIndex] = tempPoint.Y;
 
                     //add from point geo coords
-                    ((IGeometry2)TempPoint).ProjectEx(Util.GetWGSSpatRef(), esriTransformDirection.esriTransformForward, null, false, 0, 0);
-                    ThisFieldIndex = ImportToBuffer.Fields.FindField("DD_LONG1");
-                    if (ThisFieldIndex > -1) ImportToBuffer.set_Value(ThisFieldIndex, TempPoint.X);
-                    ThisFieldIndex = ImportToBuffer.Fields.FindField("DD_LAT1");
-                    if (ThisFieldIndex > -1) ImportToBuffer.set_Value(ThisFieldIndex, TempPoint.Y);
+                    ((IGeometry2)tempPoint).ProjectEx(Util.GetWGSSpatRef(), esriTransformDirection.esriTransformForward, null, false, 0, 0);
+                    thisFieldIndex = importToBuffer.Fields.FindField("DD_LONG1");
+                    if (thisFieldIndex > -1) importToBuffer.Value[thisFieldIndex] = tempPoint.X;
+                    thisFieldIndex = importToBuffer.Fields.FindField("DD_LAT1");
+                    if (thisFieldIndex > -1) importToBuffer.Value[thisFieldIndex] = tempPoint.Y;
 
                     //clone to point
-                    TempPoint = ((ESRI.ArcGIS.esriSystem.IClone)NewTrnPolyline.ToPoint).Clone() as IPoint;
+                    tempPoint = ((ESRI.ArcGIS.esriSystem.IClone)newTrnPolyline.ToPoint).Clone() as IPoint;
 
 
                     //add to point projected coords
-                    ThisFieldIndex = ImportToBuffer.Fields.FindField("PROJTD_X2");
-                    if (ThisFieldIndex > -1) ImportToBuffer.set_Value(ThisFieldIndex, TempPoint.X);
-                    ThisFieldIndex = ImportToBuffer.Fields.FindField("PROJTD_Y2");
-                    if (ThisFieldIndex > -1) ImportToBuffer.set_Value(ThisFieldIndex, TempPoint.Y);
+                    thisFieldIndex = importToBuffer.Fields.FindField("PROJTD_X2");
+                    if (thisFieldIndex > -1) importToBuffer.Value[thisFieldIndex] = tempPoint.X;
+                    thisFieldIndex = importToBuffer.Fields.FindField("PROJTD_Y2");
+                    if (thisFieldIndex > -1) importToBuffer.Value[thisFieldIndex] = tempPoint.Y;
 
                     //add to point geo coords
-                    ((IGeometry2)TempPoint).ProjectEx(Util.GetWGSSpatRef(), esriTransformDirection.esriTransformForward, null, false, 0, 0);
-                    ThisFieldIndex = ImportToBuffer.Fields.FindField("DD_LONG2");
-                    if (ThisFieldIndex > -1) ImportToBuffer.set_Value(ThisFieldIndex, TempPoint.X);
-                    ThisFieldIndex = ImportToBuffer.Fields.FindField("DD_LAT2");
-                    if (ThisFieldIndex > -1) ImportToBuffer.set_Value(ThisFieldIndex, TempPoint.Y);
+                    ((IGeometry2)tempPoint).ProjectEx(Util.GetWGSSpatRef(), esriTransformDirection.esriTransformForward, null, false, 0, 0);
+                    thisFieldIndex = importToBuffer.Fields.FindField("DD_LONG2");
+                    if (thisFieldIndex > -1) importToBuffer.Value[thisFieldIndex] = tempPoint.X;
+                    thisFieldIndex = importToBuffer.Fields.FindField("DD_LAT2");
+                    if (thisFieldIndex > -1) importToBuffer.Value[thisFieldIndex] = tempPoint.Y;
 
                     //get center point
-                    centerPoint = new PointClass();
-                    ((ICurve)NewTrnPolyline).QueryPoint(esriSegmentExtension.esriNoExtension, 0.5, true, centerPoint);
+                    IPoint centerPoint = new PointClass();
+                    ((ICurve)newTrnPolyline).QueryPoint(esriSegmentExtension.esriNoExtension, 0.5, true, centerPoint);
 
                     //get elevation for transect center
-                    CPolyline = new PolylineClass();
-                    npsSurfaceOp.ContourAsPolyline(ThisDEM, centerPoint, out CPolyline, out Elev);
+                    IPolyline cPolyline;
+                    double elev;
+                    npsSurfaceOp.ContourAsPolyline(ThisDEM, centerPoint, out cPolyline, out elev);
 
                     //set elevation in meters
-                    ThisFieldIndex = ImportToBuffer.Fields.FindField("ELEV_M");
-                    if (ThisFieldIndex > -1)
+                    thisFieldIndex = importToBuffer.Fields.FindField("ELEV_M");
+                    if (thisFieldIndex > -1)
                     {
-                        if (ThisDEMUnits == "feet") ImportToBuffer.set_Value(ThisFieldIndex, 0.3048 * Elev);
-                        if (ThisDEMUnits == "meters") ImportToBuffer.set_Value(ThisFieldIndex, Elev);
+                        if (thisDemUnits == "feet") importToBuffer.Value[thisFieldIndex] = 0.3048 * elev;
+                        if (thisDemUnits == "meters") importToBuffer.Value[thisFieldIndex] = elev;
 
                     }
 
                     //get elevation in feet
-                    ThisFieldIndex = ImportToBuffer.Fields.FindField("ELEVFT");
-                    if (ThisFieldIndex > -1)
+                    thisFieldIndex = importToBuffer.Fields.FindField("ELEVFT");
+                    if (thisFieldIndex > -1)
                     {
-                        if (ThisDEMUnits == "feet") ImportToBuffer.set_Value(ThisFieldIndex, Elev);
-                        if (ThisDEMUnits == "meters") ImportToBuffer.set_Value(ThisFieldIndex, Elev * 3.2808399);
+                        if (thisDemUnits == "feet") importToBuffer.Value[thisFieldIndex] = elev;
+                        if (thisDemUnits == "meters") importToBuffer.Value[thisFieldIndex] = elev * 3.2808399;
                     }
 
                 }
 
-                NewOIDs.Add((int)Util.SafeConvert(ImportToCursor.InsertFeature(ImportToBuffer), typeof(int)));
+                newOIDs.Add((int)Util.SafeConvert(importToCursor.InsertFeature(importToBuffer), typeof(int)));
 
             }
-
-            ImportFCursor = null;
-            ImportToCursor = null;
-            ImportToBuffer = null;
 
         }
 

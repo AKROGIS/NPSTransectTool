@@ -1,10 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
 using System.Windows.Forms;
 
 namespace NPSTransectTool
@@ -28,25 +22,25 @@ namespace NPSTransectTool
         private void btnYes_Click(object sender, EventArgs e)
         {
             m_UserFormOptions = FormOptions.Yes;
-            this.Close();
+            Close();
         }
 
         private void btnYesToAll_Click(object sender, EventArgs e)
         {
             m_UserFormOptions = FormOptions.YesAll;
-            this.Close();
+            Close();
         }
 
         private void btnNo_Click(object sender, EventArgs e)
         {
             m_UserFormOptions = FormOptions.No;
-            this.Close();
+            Close();
         }
 
         private void btnNoAll_Click(object sender, EventArgs e)
         {
             m_UserFormOptions = FormOptions.NoAll;
-            this.Close();
+            Close();
         }
     }
 

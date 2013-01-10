@@ -204,41 +204,34 @@ namespace NPSTransectTool
         /// <summary>
         ///     get the selection set from the first non NPS layer found in the map
         /// </summary>
-        public static ISelectionSet2 GetFirstNoneNPSSelectionSet(ref esriGeometryType FType,
+        public static ISelectionSet2 GetFirstNoneNPSSelectionSet(ref esriGeometryType fType,
                                                                  ref string ErrorMessage)
         {
-            NPSGlobal NPS;
-            IMap ThisMap;
-            int TotalLayers;
-            ILayer CurLayer;
-            IFeatureSelection FSelection;
-            IDataset ThisDS;
+            NPSGlobal nps = NPSGlobal.Instance;
+            IMap thisMap = nps.Map;
+            fType = esriGeometryType.esriGeometryNull;
 
-            NPS = NPSGlobal.Instance;
-            ThisMap = NPS.Map;
-            FType = esriGeometryType.esriGeometryNull;
-
-            TotalLayers = ThisMap.LayerCount;
-            for (int IndexLayer = 0; IndexLayer < TotalLayers; IndexLayer++)
+            int totalLayers = thisMap.LayerCount;
+            for (int indexLayer = 0; indexLayer < totalLayers; indexLayer++)
             {
-                CurLayer = ThisMap.get_Layer(IndexLayer);
+                ILayer curLayer = thisMap.Layer[indexLayer];
 
-                if (!(CurLayer is IFeatureLayer)) continue;
+                if (!(curLayer is IFeatureLayer)) continue;
 
-                ThisDS = (CurLayer as IFeatureLayer).FeatureClass as IDataset;
-                if (ThisDS == null) continue;
+                var thisDs = (curLayer as IFeatureLayer).FeatureClass as IDataset;
+                if (thisDs == null) continue;
 
-                if (ThisDS.Workspace.PathName == NPS.Workspace.PathName) continue;
+                if (thisDs.Workspace.PathName == nps.Workspace.PathName) continue;
 
-                if (!(CurLayer is IFeatureSelection)) continue;
-                FSelection = CurLayer as IFeatureSelection;
+                if (!(curLayer is IFeatureSelection)) continue;
+                var fSelection = curLayer as IFeatureSelection;
 
-                if (FSelection.SelectionSet == null) continue;
+                if (fSelection.SelectionSet == null) continue;
 
-                if (FSelection.SelectionSet.Count == 0) continue;
+                if (fSelection.SelectionSet.Count == 0) continue;
 
-                FType = (CurLayer as IFeatureLayer).FeatureClass.ShapeType;
-                return FSelection.SelectionSet as ISelectionSet2;
+                fType = (curLayer as IFeatureLayer).FeatureClass.ShapeType;
+                return fSelection.SelectionSet as ISelectionSet2;
             }
 
             return null;
@@ -247,52 +240,39 @@ namespace NPSTransectTool
         /// <summary>
         ///     get a layer that has the specifed FC as it's source and is part of the NPS workspace
         /// </summary>
-        public static ILayer GetLayerByFeatureClassName(string FCName)
+        public static ILayer GetLayerByFeatureClassName(string fcName)
         {
-            IEnumLayer LayerList = null;
-            ILayer ThisLayer = null, FoundLayer = null;
-            IFeatureLayer ThisFLayer = null;
-            string ThisFCName, CurrentFCWorkspaceName, FCWorkspaceName;
-            IDataset ThisDS = null;
-            NPSGlobal NPS;
-            IMap ThisMap;
+            ILayer thisLayer;
+            ILayer foundLayer = null;
 
-            NPS = NPSGlobal.Instance;
-            ThisMap = NPS.Map;
-            FCWorkspaceName = NPS.DatabasePath;
+            IMap thisMap = NPSGlobal.Instance.Map;
+            string fcWorkspaceName = NPSGlobal.Instance.DatabasePath;
 
             //get list of all layers
-            LayerList = ThisMap.get_Layers(null, true);
+            IEnumLayer layerList = thisMap.Layers;
 
-            while ((ThisLayer = LayerList.Next()) != null)
+            while ((thisLayer = layerList.Next()) != null)
             {
-                ThisFCName = "";
-                CurrentFCWorkspaceName = "";
-
                 //check if the current layer is a featurelayer
-                if (!(ThisLayer is IFeatureLayer)) continue;
-                ThisFLayer = (IFeatureLayer) ThisLayer;
+                if (!(thisLayer is IFeatureLayer)) continue;
+                var thisFLayer = (IFeatureLayer) thisLayer;
 
                 //make sure the fc is valid
-                if (ThisFLayer.FeatureClass == null) continue;
+                if (thisFLayer.FeatureClass == null) continue;
 
                 //if it is a featurelayer, then get the featureclass and workspace names
-                ThisDS = (IDataset) ThisFLayer.FeatureClass;
-                ThisFCName = ThisDS.Name;
-                CurrentFCWorkspaceName = ThisDS.Workspace.PathName;
+                var thisDs = (IDataset) thisFLayer.FeatureClass;
 
                 //if the featureclass names are the same and they are from the same workspace, then we found
                 //the layer with the specified featureclass name
-                if (ThisFCName == FCName && CurrentFCWorkspaceName == FCWorkspaceName)
+                if (thisDs.Name == fcName && thisDs.Workspace.PathName == fcWorkspaceName)
                 {
-                    FoundLayer = ThisLayer;
+                    foundLayer = thisLayer;
                     break;
                 }
             }
 
-            LayerList = null;
-
-            return FoundLayer;
+            return foundLayer;
         }
 
         /// <summary>
@@ -300,8 +280,7 @@ namespace NPSTransectTool
         /// </summary>
         public static IFeatureClass GetFeatureClass(String FCName, IWorkspace ThisWorkspace, ref string ErrorMessage)
         {
-            IFeatureClass ThisFC = null;
-            IFeatureWorkspace ThisFtrWS = null;
+            IFeatureClass thisFc;
 
             try
             {
@@ -312,8 +291,8 @@ namespace NPSTransectTool
                 }
 
 
-                ThisFtrWS = (IFeatureWorkspace) ThisWorkspace;
-                ThisFC = ThisFtrWS.OpenFeatureClass(FCName);
+                var thisFtrWs = (IFeatureWorkspace) ThisWorkspace;
+                thisFc = thisFtrWs.OpenFeatureClass(FCName);
             }
             catch (Exception ex)
             {
@@ -321,7 +300,7 @@ namespace NPSTransectTool
                 return null;
             }
 
-            return ThisFC;
+            return thisFc;
         }
 
         /// <summary>
@@ -335,35 +314,26 @@ namespace NPSTransectTool
         /// <summary>
         ///     get a table from the specified workspace
         /// </summary>
-        public static ITable GetTable(string TableName, IWorkspace ThisWorkspace, ref string ErrorMessage)
+        public static ITable GetTable(string tableName, IWorkspace thisWorkspace, ref string errorMessage)
         {
-            ITable ThisTable = null;
-            IFeatureWorkspace ThisFtrWS = null;
-
             try
             {
-                if (ThisWorkspace != null && (ThisWorkspace is IFeatureWorkspace))
-                {
-                    ThisFtrWS = (IFeatureWorkspace) ThisWorkspace;
-                    ThisTable = ThisFtrWS.OpenTable(TableName);
-                }
+                return ((IFeatureWorkspace) thisWorkspace).OpenTable(tableName);
             }
             catch (Exception ex)
             {
-                ErrorMessage = "Error occured while getting table from workspace. " + ex.Message;
+                errorMessage = "Error occured while getting table from workspace. " + ex.Message;
                 return null;
             }
-
-            return ThisTable;
         }
 
-        public static ITable GetTable(string TableName, string WorkspacePath, ref string ErrorMessage)
+        public static ITable GetTable(string tableName, string WorkspacePath, ref string errorMessage)
         {
             IWorkspace ThisWorkspace = null;
-            return GetTable(TableName, WorkspacePath, ref ThisWorkspace, ref ErrorMessage);
+            return GetTable(tableName, WorkspacePath, ref ThisWorkspace, ref errorMessage);
         }
 
-        public static ITable GetTable(string TableName, string WorkspacePath, ref IWorkspace ThisWorkspace,
+        public static ITable GetTable(string tableName, string WorkspacePath, ref IWorkspace ThisWorkspace,
                                       ref string ErrorMessage)
         {
             ITable ThisTable = null;
@@ -378,12 +348,12 @@ namespace NPSTransectTool
                 if (ThisWorkspace != null && (ThisWorkspace is IFeatureWorkspace))
                 {
                     ThisFtrWS = (IFeatureWorkspace) ThisWorkspace;
-                    ThisTable = ThisFtrWS.OpenTable(TableName);
+                    ThisTable = ThisFtrWS.OpenTable(tableName);
                 }
             }
             catch (Exception ex)
             {
-                ErrorMessage = "Error occured while getting table " + TableName
+                ErrorMessage = "Error occured while getting table " + tableName
                                + " from workspace " + WorkspacePath + ". " + ex.Message;
                 return null;
             }
@@ -391,9 +361,9 @@ namespace NPSTransectTool
             return ThisTable;
         }
 
-        public static ITable GetTable(string TableName, ref string ErrorMessage)
+        public static ITable GetTable(string tableName, ref string ErrorMessage)
         {
-            return GetTable(TableName, NPSGlobal.Instance.Workspace, ref ErrorMessage);
+            return GetTable(tableName, NPSGlobal.Instance.Workspace, ref ErrorMessage);
         }
 
         /// <summary>

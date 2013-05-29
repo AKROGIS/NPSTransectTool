@@ -117,6 +117,7 @@
             this.btnEditArcPadDefaults = new System.Windows.Forms.Button();
             this.tabConfig = new System.Windows.Forms.TabPage();
             this.groupBox6 = new System.Windows.Forms.GroupBox();
+            this.cboDEMFileUnits = new System.Windows.Forms.ComboBox();
             this.label33 = new System.Windows.Forms.Label();
             this.btnRunChecks = new System.Windows.Forms.Button();
             this.txtMaxAttempts = new System.Windows.Forms.TextBox();
@@ -125,7 +126,6 @@
             this.txtDemFileLocation = new System.Windows.Forms.TextBox();
             this.label29 = new System.Windows.Forms.Label();
             this.lblProgressMessage = new System.Windows.Forms.Label();
-            this.cboDEMFileUnits = new System.Windows.Forms.ComboBox();
             this.tabTransectTabs.SuspendLayout();
             this.tabStepOne.SuspendLayout();
             this.groupBox1.SuspendLayout();
@@ -357,9 +357,9 @@
             this.label5.AutoSize = true;
             this.label5.Location = new System.Drawing.Point(84, 54);
             this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(137, 13);
+            this.label5.Size = new System.Drawing.Size(125, 13);
             this.label5.TabIndex = 3;
-            this.label5.Text = "(Elevevation DEM file units)";
+            this.label5.Text = "(Elevation DEM file units)";
             // 
             // tabStepTwo
             // 
@@ -954,7 +954,7 @@
             this.label28.Size = new System.Drawing.Size(448, 31);
             this.label28.TabIndex = 9;
             this.label28.Text = "The Import Random Points / Transects tool is used to import Random Points or Tran" +
-                "sects in the specified Survey and batch from a Shapefile or Map selection.";
+    "sects in the specified Survey and batch from a Shapefile or Map selection.";
             // 
             // label27
             // 
@@ -963,7 +963,7 @@
             this.label27.Size = new System.Drawing.Size(458, 31);
             this.label27.TabIndex = 8;
             this.label27.Text = "The Straight-Line Tool is used to recalculate the sightings\' and horizons\' distan" +
-                "ce away from their respective on- transect segment.";
+    "ce away from their respective on- transect segment.";
             // 
             // label26
             // 
@@ -972,7 +972,7 @@
             this.label26.Size = new System.Drawing.Size(464, 31);
             this.label26.TabIndex = 7;
             this.label26.Text = "The buffer tool is used to generate flat buffers on the flown-side of on-transect" +
-                " segments.";
+    " segments.";
             // 
             // label25
             // 
@@ -981,8 +981,8 @@
             this.label25.Size = new System.Drawing.Size(464, 42);
             this.label25.TabIndex = 6;
             this.label25.Text = "The Import Survey Boundary Tool is used to import existing polygon features to se" +
-                "rve as survey boundaries. The Import Survey Boundary Tool will only import polyg" +
-                "on features stored within shape files.";
+    "rve as survey boundaries. The Import Survey Boundary Tool will only import polyg" +
+    "on features stored within shape files.";
             // 
             // label24
             // 
@@ -991,8 +991,8 @@
             this.label24.Size = new System.Drawing.Size(464, 35);
             this.label24.TabIndex = 5;
             this.label24.Text = "The Edit ArcPad Defaults Tool is used to edit the defaultvalues.dbf file used by " +
-                "ArcPad. The defaultvalues.dbf file stores the options for the picklists found on" +
-                " the ArcPad sighting form.";
+    "ArcPad. The defaultvalues.dbf file stores the options for the picklists found on" +
+    " the ArcPad sighting form.";
             // 
             // btnImportRndPntsOrTrans
             // 
@@ -1071,6 +1071,15 @@
             this.groupBox6.TabStop = false;
             this.groupBox6.Text = "Configuration";
             // 
+            // cboDEMFileUnits
+            // 
+            this.cboDEMFileUnits.FormattingEnabled = true;
+            this.cboDEMFileUnits.Location = new System.Drawing.Point(167, 58);
+            this.cboDEMFileUnits.Name = "cboDEMFileUnits";
+            this.cboDEMFileUnits.Size = new System.Drawing.Size(121, 21);
+            this.cboDEMFileUnits.TabIndex = 10;
+            this.cboDEMFileUnits.Tag = "DEMUnits";
+            // 
             // label33
             // 
             this.label33.AutoSize = true;
@@ -1141,15 +1150,6 @@
             this.lblProgressMessage.Name = "lblProgressMessage";
             this.lblProgressMessage.Size = new System.Drawing.Size(0, 13);
             this.lblProgressMessage.TabIndex = 10;
-            // 
-            // cboDEMFileUnits
-            // 
-            this.cboDEMFileUnits.FormattingEnabled = true;
-            this.cboDEMFileUnits.Location = new System.Drawing.Point(167, 58);
-            this.cboDEMFileUnits.Name = "cboDEMFileUnits";
-            this.cboDEMFileUnits.Size = new System.Drawing.Size(121, 21);
-            this.cboDEMFileUnits.TabIndex = 10;
-            this.cboDEMFileUnits.Tag = "DEMUnits";
             // 
             // TransectToolForm
             // 

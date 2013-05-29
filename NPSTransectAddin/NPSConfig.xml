@@ -13,8 +13,8 @@
     <FeatureClass name="GPSPoints">GPSPointsLog</FeatureClass>
   </FeatureClasses>
   <StoredOptions>
-    <StoredOption name="DemFileLocation">X:\DEM\Statewid\akned</StoredOption>
-    <StoredOption name="SurveyID">[Select Survey]</StoredOption>
+    <StoredOption name="DemFileLocation">C:\tmp\GeoNorth\akned1.tif</StoredOption>
+    <StoredOption name="SurveyID">1000</StoredOption>
     <StoredOption name="TotalRandomPoints">1000</StoredOption>
     <StoredOption name="GridPointSpacing">10000</StoredOption>
     <StoredOption name="ExportDataPath">C:\Program Files (x86)\ArcPad 7.1\Applets</StoredOption>
@@ -22,7 +22,7 @@
     <StoredOption name="MinSlope">1</StoredOption>
     <StoredOption name="MaxSlope">10</StoredOption>
     <StoredOption name="TargetLength">25000</StoredOption>
-    <StoredOption name="MaxElevation">1000</StoredOption>
+    <StoredOption name="MaxElevation">600</StoredOption>
     <StoredOption name="MinTransLineLength">100</StoredOption>
     <StoredOption name="BufferFCName">Buffer_01</StoredOption>
     <StoredOption name="BufferDistance">500</StoredOption>

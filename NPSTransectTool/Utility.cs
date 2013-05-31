@@ -1454,9 +1454,10 @@ namespace NPSTransectTool
 
                 InsertCursor.InsertFeature(InsertBuffer);
             }
-
-            TempCursor = null;
-            InsertCursor = null;
+            
+            InsertCursor.Flush();
+            System.Runtime.InteropServices.Marshal.ReleaseComObject(TempCursor);
+            System.Runtime.InteropServices.Marshal.ReleaseComObject(InsertCursor);
 
 
             SetProgressMessage("Cleaning up temp files");
@@ -1640,8 +1641,10 @@ namespace NPSTransectTool
                 FlatAreasCursor.InsertFeature(FlatAreasFBuffer);
             }
 
-            TempAggregateClipCursor = null;
-            FlatAreasCursor = null;
+            FlatAreasCursor.Flush();
+            System.Runtime.InteropServices.Marshal.ReleaseComObject(TempAggregateClipCursor);
+            System.Runtime.InteropServices.Marshal.ReleaseComObject(FlatAreasCursor);
+
 
             SetProgressMessage("Cleaning up temp files");
             DeleteDataset(TempFlatAreasPolyFCName, esriDatasetType.esriDTFeatureClass, ref InternalErrors);

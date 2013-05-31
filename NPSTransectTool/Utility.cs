@@ -1315,8 +1315,6 @@ namespace NPSTransectTool
         public static void GenerateExcludedAreasPolygons(int SurveyID, int MaximumElevInFeet, bool IsAboveElevation,
                                                          IGeoDataset ClippedRasterDS, ref string ErrorMessage)
         {
-            IMathOp ThisMathOp;
-            IGeoDataset IntRasterDS = null;
             IQueryFilter ThisQueryFilter;
             IRasterDescriptor ThisRasterDescriptor;
             IGeoProcessor ThisGeoProcessor = null;
@@ -1361,21 +1359,6 @@ namespace NPSTransectTool
 
             try
             {
-                SetProgressMessage("Converting DEM values to integers");
-
-                ThisMathOp = new RasterMathOpsClass();
-                IntRasterDS = ThisMathOp.Int(ClippedRasterDS);
-            }
-            catch (Exception ex)
-            {
-                ErrorMessage = "Error occured while converting DEM float slope values to slope integer values. " +
-                               ex.Message;
-                return;
-            }
-
-
-            try
-            {
                 SetProgressMessage("Building excluded area polygons from DEM");
 
                 //determine which values to exclude
@@ -1387,7 +1370,7 @@ namespace NPSTransectTool
                     ThisQueryFilter.WhereClause = " Value <= " + MaximumElevInFeet;
 
                 ThisRasterDescriptor = new RasterDescriptorClass();
-                ThisRasterDescriptor.Create(IntRasterDS as IRaster, ThisQueryFilter, "Value");
+                ThisRasterDescriptor.Create(ClippedRasterDS as IRaster, ThisQueryFilter, "Value");
 
                 ThisConversionOp = new RasterConversionOpClass();
                 NewElvPolyFC = ThisConversionOp.RasterDataToPolygonFeatureData(ThisRasterDescriptor as IGeoDataset,
@@ -1396,7 +1379,7 @@ namespace NPSTransectTool
             }
             catch (Exception ex)
             {
-                ErrorMessage = "Error occured while generating a FeatureClass of flat "
+                ErrorMessage = "Error occured while generating a FeatureClass of excluded "
                                + "areas from the default DEM file. " + ex.Message;
                 return;
             }

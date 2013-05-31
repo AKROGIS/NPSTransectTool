@@ -1575,7 +1575,7 @@ namespace NPSTransectTool
                 ThisConversionOp = new RasterConversionOpClass();
                 var unused = ThisConversionOp.RasterDataToPolygonFeatureData(ThisRasterDescriptor as IGeoDataset,
                                                                 NPS.Workspace, TempFlatAreasPolyFCName, true) as IFeatureClass;
-                if (unused != null)
+                if (unused == null)
                     return;
             }
             catch (Exception ex)

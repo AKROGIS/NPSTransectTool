@@ -492,7 +492,7 @@ namespace NPSTransectTool
                         HighestSurveyID = SurveyID;
                 }
 
-                ThisFCursor = null;
+                System.Runtime.InteropServices.Marshal.ReleaseComObject(ThisFCursor);
             }
             catch (Exception ex)
             {
@@ -557,7 +557,7 @@ namespace NPSTransectTool
                         HighestFieldValue = FieldValue;
                 }
 
-                ThisFCursor = null;
+                System.Runtime.InteropServices.Marshal.ReleaseComObject(ThisFCursor);
             }
             catch (Exception ex)
             {
@@ -719,7 +719,7 @@ namespace NPSTransectTool
                 Surveys.Add(SurveyName, SurveyID);
             }
 
-            ThisFCursor = null;
+            System.Runtime.InteropServices.Marshal.ReleaseComObject(ThisFCursor);
 
             return Surveys;
         }
@@ -782,6 +782,7 @@ namespace NPSTransectTool
 
                     UniqueValues.Add(CurrentValue);
                 }
+                System.Runtime.InteropServices.Marshal.ReleaseComObject(ThisFCursor);
             }
             catch (Exception ex)
             {
@@ -935,6 +936,7 @@ namespace NPSTransectTool
 
                 ThisFeature = ThisFCursor.NextFeature();
                 BoundaryPoly = ThisFeature.ShapeCopy as IPolygon;
+                System.Runtime.InteropServices.Marshal.ReleaseComObject(ThisFCursor);
             }
             catch (Exception ex)
             {
@@ -1055,8 +1057,8 @@ namespace NPSTransectTool
                 {
                     ThisFeature.Delete();
                 }
-
-                ThisFCursor = null;
+                ThisFCursor.Flush();
+                System.Runtime.InteropServices.Marshal.ReleaseComObject(ThisFCursor);
             }
             catch (Exception ex)
             {
@@ -1082,7 +1084,7 @@ namespace NPSTransectTool
 
             CopyCount = CopyFeatures(ReadCursor, ToFC, FieldsToUpdate, ref ErrorMessage);
 
-            ReadCursor = null;
+            System.Runtime.InteropServices.Marshal.ReleaseComObject(ReadCursor);
 
             return CopyCount;
         }
@@ -1153,8 +1155,9 @@ namespace NPSTransectTool
                 InsertCursor.InsertFeature(InsertBuffer);
             }
 
-            FromFCursor = null;
-            InsertCursor = null;
+            InsertCursor.Flush();
+            System.Runtime.InteropServices.Marshal.ReleaseComObject(FromFCursor);
+            System.Runtime.InteropServices.Marshal.ReleaseComObject(InsertCursor); 
 
             return CopyTotal;
         }
@@ -1180,30 +1183,27 @@ namespace NPSTransectTool
             FromWhereClause = "TransectID=" + TransectID + " AND SurveyID=" + SurveyID;
 
 
+            using (var comReleaser = new ESRI.ArcGIS.ADF.ComReleaser())
+            {
             //get transect feature and cursor
             TrasectFC = GetFeatureClass(NPS.LYR_GENERATED_TRANSECTS, ref ErrorMessage);
             ThisQueryFilter = new QueryFilterClass();
             ThisQueryFilter.WhereClause = FromWhereClause;
             TransectCursor = TrasectFC.Update(ThisQueryFilter, false);
+            comReleaser.ManageLifetime(TransectCursor);
             TransectFeature = TransectCursor.NextFeature();
             if (TransectFeature == null)
-            {
-                TransectCursor = null;
                 return;
-            }
 
             //get source transect
             ThisQueryFilter = null;
             ThisQueryFilter = new QueryFilterClass();
             ThisQueryFilter.WhereClause = FromWhereClause;
             FromCursor = FromFC.Search(ThisQueryFilter, false);
+            comReleaser.ManageLifetime(FromCursor);
             FromFeature = FromCursor.NextFeature();
             if (FromFeature == null)
-            {
-                FromCursor = null;
-                TransectCursor = null;
                 return;
-            }
 
             FieldsToUpdate = new List<string>
                 {
@@ -1233,9 +1233,8 @@ namespace NPSTransectTool
             }
 
             TransectCursor.UpdateFeature(TransectFeature);
-
-            TransectCursor = null;
-            FromCursor = null;
+            TransectCursor.Flush();
+            }
         }
 
         /// <summary>
@@ -1719,7 +1718,8 @@ namespace NPSTransectTool
                 InsertCursor.InsertFeature(InsertBuffer);
             }
 
-            InsertCursor = null;
+            InsertCursor.Flush();
+            System.Runtime.InteropServices.Marshal.ReleaseComObject(InsertCursor);
             return NextBatcID;
         }
 
@@ -1952,8 +1952,10 @@ namespace NPSTransectTool
                 RandPntCursor.UpdateFeature(RandPntFeature);
             }
 
-            InsertCursor = null;
-            RandPntCursor = null;
+            InsertCursor.Flush();
+            RandPntCursor.Flush();
+            System.Runtime.InteropServices.Marshal.ReleaseComObject(InsertCursor);
+            System.Runtime.InteropServices.Marshal.ReleaseComObject(RandPntCursor);
         }
 
         /// <summary>
@@ -2855,8 +2857,9 @@ namespace NPSTransectTool
                 ToFCCursor.InsertFeature(ToFCBuffer);
             }
 
-            ToFCCursor = null;
-            FromFCCursor = null;
+            ToFCCursor.Flush();
+            System.Runtime.InteropServices.Marshal.ReleaseComObject(ToFCCursor);
+            System.Runtime.InteropServices.Marshal.ReleaseComObject(FromFCCursor);
         }
 
         /// <summary>
@@ -3076,7 +3079,8 @@ namespace NPSTransectTool
 
                 InsertCursor.InsertFeature(InsertBuffer);
             }
-            InsertCursor = null;
+            InsertCursor.Flush();
+            System.Runtime.InteropServices.Marshal.ReleaseComObject(InsertCursor);
 
             return NextBatcID;
         }
@@ -3288,13 +3292,13 @@ namespace NPSTransectTool
                 ThisFeatureCursor = FeatureClassToSearchIn.Search(ThisSpatialFilter, false);
                 CheckFeature = ThisFeatureCursor.NextFeature();
                 DoesRelate = CheckFeature == null ? false : true;
+                System.Runtime.InteropServices.Marshal.ReleaseComObject(ThisFeatureCursor);
             }
             catch
             {
             }
 
 
-            ThisFeatureCursor = null;
             CheckFeature = null;
 
             return DoesRelate;
@@ -3347,6 +3351,8 @@ namespace NPSTransectTool
                 ThisFBuffer.set_Value(SurveyIDIndex, SurveyID);
 
                 ThisFCursor.InsertFeature(ThisFBuffer);
+                ThisFCursor.Flush();
+                System.Runtime.InteropServices.Marshal.ReleaseComObject(ThisFCursor);
             }
             catch (Exception ex)
             {
@@ -3354,7 +3360,6 @@ namespace NPSTransectTool
                                + ((IDataset) ThisFeatureClass).Name + " FeatureClass. " + ex.Message;
             }
 
-            ThisFCursor = null;
         }
 
         /// <summary>
@@ -3721,7 +3726,7 @@ namespace NPSTransectTool
                 ThisFCursor = ThisFC.Search(ThisQF, false);
                 ThisFeature = ThisFCursor.NextFeature();
                 HasRecords = ThisFeature == null ? false : true;
-                ThisFCursor = null;
+                System.Runtime.InteropServices.Marshal.ReleaseComObject(ThisFCursor);
             }
             catch
             {
@@ -3825,7 +3830,7 @@ namespace NPSTransectTool
                 Aircraft = (string) SafeConvert(FromFCFeature.get_Value(AircraftIndex), typeof (string));
                 if (SurveyID > -1 && Aircraft != "" && PilotLNam != "") break;
             }
-            FromFCCursor = null;
+            System.Runtime.InteropServices.Marshal.ReleaseComObject(FromFCCursor);
 
             if (SurveyID == -1) return;
 
@@ -3867,8 +3872,9 @@ namespace NPSTransectTool
                 ToFCCursor.InsertFeature(ToFCBuffer);
             }
 
-            ToFCCursor = null;
-            FromFCCursor = null;
+            ToFCCursor.Flush();
+            System.Runtime.InteropServices.Marshal.ReleaseComObject(ToFCCursor);
+            System.Runtime.InteropServices.Marshal.ReleaseComObject(FromFCCursor);
         }
 
         /// <summary>
@@ -3896,7 +3902,7 @@ namespace NPSTransectTool
                 FirstValidValue = (string) SafeConvert(ThisFeature.get_Value(FieldIndex), typeof (string));
                 if (string.IsNullOrEmpty(FirstValidValue) == false) break;
             }
-            ThisFCursor = null;
+            System.Runtime.InteropServices.Marshal.ReleaseComObject(ThisFCursor);
 
             return FirstValidValue;
         }
@@ -4005,7 +4011,7 @@ namespace NPSTransectTool
                 if (ThisRow != null)
                     RetValue = (string) SafeConvert(ThisRow.get_Value(DefValueFieldIndex), typeof (string));
 
-                ThisCursor = null;
+                System.Runtime.InteropServices.Marshal.ReleaseComObject(ThisCursor);
             }
             catch
             {
@@ -4054,8 +4060,8 @@ namespace NPSTransectTool
                     ThisRow.set_Value(DefValueFieldIndex, DefValue);
                     ThisCursor.UpdateRow(ThisRow);
                 }
-
-                ThisCursor = null;
+                ThisCursor.Flush();
+                System.Runtime.InteropServices.Marshal.ReleaseComObject(ThisCursor);
             }
             catch
             {

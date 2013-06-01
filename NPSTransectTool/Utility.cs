@@ -913,7 +913,7 @@ namespace NPSTransectTool
         /// <summary>
         ///     get she polygon shape representing a survey area
         /// </summary>
-        public static IPolygon GetSurveyBoundary(string SurveyID, ref string ErrorMessage)
+        public static IPolygon GetSurveyBoundary(int surveyId, ref string ErrorMessage)
         {
             IFeature ThisFeature;
             IFeatureCursor ThisFCursor;
@@ -930,7 +930,7 @@ namespace NPSTransectTool
             try
             {
                 ThisQueryFilter = new QueryFilterClass();
-                ThisQueryFilter.WhereClause = "SurveyID=" + SurveyID;
+                ThisQueryFilter.WhereClause = "SurveyID=" + Convert.ToString(surveyId);
 
                 ThisFCursor = BoundaryFC.Search(ThisQueryFilter, false);
 
@@ -950,38 +950,31 @@ namespace NPSTransectTool
         /// <summary>
         ///     get a clip of a larger raster using the specified survey boundary as the cut out shape
         /// </summary>
-        public static IGeoDataset ClipRasterByBndPoly(IGeoDataset RasterToClip, string SurveyID, ref string ErrorMessage)
+        public static IGeoDataset ClipRasterBySurvey(IGeoDataset raster, int surveyId, ref string error)
         {
-            IPolygon SurveyBoundary, SurveyEnvelopePoly, DEMEnvelopePoly;
-            IExtractionOp ExtractOp;
-            IGeoDataset ClippedRaster = null;
-
-            SurveyBoundary = GetSurveyBoundary(SurveyID, ref ErrorMessage);
-            if (string.IsNullOrEmpty(ErrorMessage) == false) return null;
-
-            SurveyEnvelopePoly = EnvelopeToPolygon(SurveyBoundary.Envelope);
-            DEMEnvelopePoly = EnvelopeToPolygon(RasterToClip.Extent);
-
-            if (((IRelationalOperator) DEMEnvelopePoly).Contains(SurveyEnvelopePoly) == false)
-            {
-                ErrorMessage = "The boundary polygon for SurveyID " + SurveyID
-                               + " is out of range of the Raster extent.";
-                return null;
-            }
-
             try
             {
-                ExtractOp = new RasterExtractionOpClass();
-                ClippedRaster = ExtractOp.Polygon(RasterToClip, SurveyEnvelopePoly, true);
+                var SurveyBoundary = GetSurveyBoundary(surveyId, ref error);
+                if (!String.IsNullOrEmpty(error))
+                    return null;
+
+                var env = SurveyBoundary.Envelope;
+                env.Project(raster.SpatialReference);
+                if (!((IRelationalOperator)env).Within(raster.Extent))
+                {
+                    error = "The DEM raster does not overlap all of survey " + surveyId;
+                    return null;
+                }
+
+                var ExtractOp = new RasterExtractionOpClass();
+                return ExtractOp.Rectangle(raster, env, true);
             }
             catch (Exception ex)
             {
-                ErrorMessage = "Error occured while clipping raster to boundary of survey "
-                               + SurveyID + ". " + ex.Message;
+                error = "Error occured while clipping raster to boundary of survey "
+                               + surveyId + ". " + Environment.NewLine + ex.Message;
+                return null;
             }
-
-
-            return ClippedRaster;
         }
 
         /// <summary>
@@ -1666,7 +1659,7 @@ namespace NPSTransectTool
 
             NPS = NPSGlobal.Instance;
 
-            BoundaryPoly = GetSurveyBoundary(Convert.ToString(SurveyID), ref ErrorMessage);
+            BoundaryPoly = GetSurveyBoundary(SurveyID, ref ErrorMessage);
             if (string.IsNullOrEmpty(ErrorMessage) == false) return -1;
 
             ExcludeFC = GetFeatureClass(NPS.LYR_EXCLUDED_AREAS, ref ErrorMessage);
@@ -3017,7 +3010,7 @@ namespace NPSTransectTool
             NPS = NPSGlobal.Instance;
 
             //get the area polygon for this survey
-            BoundaryPoly = GetSurveyBoundary(Convert.ToString(SurveyID), ref ErrorMessage);
+            BoundaryPoly = GetSurveyBoundary(SurveyID, ref ErrorMessage);
             if (string.IsNullOrEmpty(ErrorMessage) == false) return -1;
 
             ExcludeFC = GetFeatureClass(NPS.LYR_EXCLUDED_AREAS, ref ErrorMessage);
@@ -3337,7 +3330,7 @@ namespace NPSTransectTool
 
             if (ThisFeatureClass.FeatureCount(ThisQueryFilter) > 0) return;
 
-            BoundarPoly = GetSurveyBoundary(Convert.ToString(SurveyID), ref ErrorMessage);
+            BoundarPoly = GetSurveyBoundary(SurveyID, ref ErrorMessage);
             if (string.IsNullOrEmpty(ErrorMessage) == false) return;
 
             try

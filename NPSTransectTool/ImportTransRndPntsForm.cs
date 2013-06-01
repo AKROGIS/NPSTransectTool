@@ -279,7 +279,7 @@ namespace NPSTransectTool
 
             //clip the dem file to the size of the survey area
             if (string.IsNullOrEmpty(errorMessage))
-                thisGeoRasterDs = Util.ClipRasterByBndPoly(thisGeoRasterDs, Convert.ToString(surveyId), ref errorMessage);
+                thisGeoRasterDs = Util.ClipRasterBySurvey(thisGeoRasterDs, surveyId, ref errorMessage);
 
 
             if (string.IsNullOrEmpty(errorMessage))

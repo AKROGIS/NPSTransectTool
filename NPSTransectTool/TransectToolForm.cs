@@ -88,7 +88,7 @@ namespace NPSTransectTool
                 Util.SetProgressMessage("Clipping Raster", 8);
 
                 //clip the dem file to the size of the survey area
-                thisGeoRasterDs = Util.ClipRasterByBndPoly(thisGeoRasterDs, Convert.ToString(SurveyID), ref errorMessage);
+                thisGeoRasterDs = GetClippedRaster(thisGeoRasterDs, SurveyID, ref errorMessage);
             }
 
 
@@ -124,6 +124,12 @@ namespace NPSTransectTool
             SetSurveyProgressLabels(SurveyID);
 
             MessageBox.Show(string.IsNullOrEmpty(errorMessage) ? "Completed Successfully" : errorMessage);
+        }
+
+        private IGeoDataset _clippedDemRaster;
+        private IGeoDataset GetClippedRaster(IGeoDataset raster, int survey, ref string error)
+        {
+            return _clippedDemRaster ?? (_clippedDemRaster = Util.ClipRasterBySurvey(raster, survey, ref error));
         }
 
         private void btnGenerateFlatAreas_Click(object sender, EventArgs e)
@@ -166,7 +172,7 @@ namespace NPSTransectTool
                 Util.SetProgressMessage("Clipping Raster", 9);
 
                 //clip the dem file to the size of the survey area
-                thisGeoRasterDs = Util.ClipRasterByBndPoly(thisGeoRasterDs, Convert.ToString(SurveyID), ref errorMessage);
+                thisGeoRasterDs = GetClippedRaster(thisGeoRasterDs, SurveyID, ref errorMessage);
             }
 
             if (string.IsNullOrEmpty(errorMessage))
@@ -277,7 +283,7 @@ namespace NPSTransectTool
                 //  cancel the operation with a warning:  "The Grid size you entered would not produce enought points"
                 //
 
-                IPolygon surveyBoundary = Util.GetSurveyBoundary(Convert.ToString(SurveyID), ref ErrorMessage);
+                IPolygon surveyBoundary = Util.GetSurveyBoundary(SurveyID, ref ErrorMessage);
 
                 if (string.IsNullOrEmpty(ErrorMessage))
                 {
@@ -461,7 +467,7 @@ namespace NPSTransectTool
 
             //clip the dem file to the size of the survey area
             if (string.IsNullOrEmpty(ErrorMessage))
-                ThisGeoRasterDS = Util.ClipRasterByBndPoly(ThisGeoRasterDS, Convert.ToString(surveyId), ref ErrorMessage);
+                ThisGeoRasterDS = GetClippedRaster(ThisGeoRasterDS, surveyId, ref ErrorMessage);
 
 
             //if we are replaceing all existing transects for this survey, delete those features now

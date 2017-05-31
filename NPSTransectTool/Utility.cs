@@ -2112,6 +2112,8 @@ namespace NPSTransectTool
 
             if (npsPolyline == null) return null;
 
+            // IF min < Countour.length < max and is in boundary and not in excluded  THEN return it 
+
 
             DidMaxLengthFit = false;
 

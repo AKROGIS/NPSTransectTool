@@ -1869,8 +1869,10 @@ namespace NPSTransectTool
             {
                 //if we are at the requested transect count, stop making transects
                 if (TransectCount == TransectTotal) break;
+                System.Diagnostics.Debug.WriteLine("\nTransect #{0} at ({1},{2})", TransectCount, ((IPoint)RandPntFeature.Shape).X, ((IPoint)RandPntFeature.Shape).Y);
 
                 //make sure the random point shape is valid
+                if (RandPntFeature.ShapeCopy == null) System.Diagnostics.Debug.WriteLine("null shape skipping");
                 if (RandPntFeature.ShapeCopy == null) continue;
 
                 //check if this point is corrupted, if so don't process it
@@ -1878,6 +1880,7 @@ namespace NPSTransectTool
                 if (CorruptFlag == "?")
                 {
                     CorruptCount++;
+                    System.Diagnostics.Debug.WriteLine("corrupt skipping");
                     continue;
                 }
 
@@ -1896,6 +1899,13 @@ namespace NPSTransectTool
                     MaxLineLength, MinLineLength, BoundaryFC, ExcludedFC, FlatAreasFC, SurveyID, ClippedRasterDS,
                     TransCreateAttempts, ref TransType, ref ErrorMessage);
 
+                if (NewTrnPolyline == null)
+                {
+                    System.Diagnostics.Debug.WriteLine("Failed to create transect");
+                } else
+                {
+                    System.Diagnostics.Debug.WriteLine("Created {0} transect; length {1}", TransType, NewTrnPolyline.Length);
+                }
                 //update counters on startus of transect generation
                 if (TransType == "straight") StraightCount++;
                 if (TransType == "contour") ContourCount++;
@@ -2110,15 +2120,25 @@ namespace NPSTransectTool
             npsSurfaceOp = null;
             GC.Collect();
 
+            if (npsPolyline == null) System.Diagnostics.Debug.WriteLine("#### Contour generation failed");
+
             if (npsPolyline == null) return null;
 
             // IF min < Countour.length < max and is in boundary and not in excluded  THEN return it 
 
+            System.Diagnostics.Debug.WriteLine("Contour length: {0}", npsPolyline.Length);
 
             DidMaxLengthFit = false;
 
             //try to cut the contour into the max length specified
             npsClippedPolyline = Util.ClipContour(npsPoint, npsPolyline, (MaxLineLength / 2), (MaxLineLength / 2));
+
+            if (npsClippedPolyline == null)
+            {
+                System.Diagnostics.Debug.WriteLine("Contour clip (max) failed");
+                return null;
+            }
+            System.Diagnostics.Debug.WriteLine("Clipped Contour to maxlength: {0} ({1})", npsClippedPolyline.Length, MaxLineLength);
 
             IsInBndPoly = false;
             IsInExcludedAreas = false;
@@ -2137,6 +2157,8 @@ namespace NPSTransectTool
 
             //if contour obtained falls in excluded areas, abandon poyline
             if (IsInBndPoly == false || IsInExcludedAreas == true) npsClippedPolyline = null;
+            if (IsInBndPoly == false) System.Diagnostics.Debug.WriteLine("max contour not inside boundry");
+            if (IsInExcludedAreas == true) System.Diagnostics.Debug.WriteLine("max contour is in excluded area");
 
             //remember if max length fit
             if (npsClippedPolyline != null) DidMaxLengthFit = true;
@@ -2144,7 +2166,17 @@ namespace NPSTransectTool
 
             //if the max length did not fit, try the min length
             if (npsClippedPolyline == null)
+            {
                 npsClippedPolyline = Util.ClipContour(npsPoint, npsPolyline, (MinLineLength / 2), (MinLineLength / 2));
+                if (npsClippedPolyline == null)
+                {
+                    System.Diagnostics.Debug.WriteLine("Contour clip (min) failed");
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine("Clipped Contour to min length: {0} ({1})", npsClippedPolyline.Length, MinLineLength);
+                }
+            }
 
             //check if the shortest length can fit
             if (npsClippedPolyline != null)
@@ -2161,12 +2193,16 @@ namespace NPSTransectTool
 
             //if the min failed then clear it
             if (IsInBndPoly == false || IsInExcludedAreas == true) npsClippedPolyline = null;
+            if (IsInBndPoly == false) System.Diagnostics.Debug.WriteLine("min contour not inside boundry");
+            if (IsInExcludedAreas == true) System.Diagnostics.Debug.WriteLine("min contour is in excluded area");
 
             //if the max length failed but the min length fit, then try various lengths
             if (npsClippedPolyline != null && DidMaxLengthFit == false)
             {
 
+                System.Diagnostics.Debug.WriteLine("min fit, but max did not, try 20 intermediate increments");
                 CurTransLength = (MinLineLength / 2) + LengthTryIncrements;
+                int count = 0;
                 while (npsClippedPolyline != null)
                 {
 
@@ -2185,7 +2221,9 @@ namespace NPSTransectTool
                         //check if contour falls in excluded areas
                         IsInExcludedAreas = Util.HasRelationshipWithFC(npsClippedPolyline as IGeometry,
                             esriSpatialRelEnum.esriSpatialRelCrosses, ExclPolyFC, "SurveyID=" + SurveyID);
+                        System.Diagnostics.Debug.WriteLine("   Increment {3}, boundry {0}, excluded {1}, length {2}", IsInBndPoly, IsInExcludedAreas, npsClippedPolyline.Length, count++);
                     }
+                    if (npsClippedPolyline == null)  System.Diagnostics.Debug.WriteLine("Clipping killed the polyline");
 
                     //if contour obtained falls in excluded areas, abandon poyline
                     if (IsInBndPoly == false || IsInExcludedAreas == true) npsClippedPolyline = null;
@@ -2193,6 +2231,7 @@ namespace NPSTransectTool
                     CurTransLength = CurTransLength + LengthTryIncrements;
 
                 }
+                System.Diagnostics.Debug.WriteLine("final polygon length: {0}", PrevTryPolyline.Length);
 
                 //set the last successful as the clipped polyline
                 npsClippedPolyline = PrevTryPolyline;
@@ -2294,6 +2333,7 @@ namespace NPSTransectTool
             }
             else //if polyline is closed
             {
+                System.Diagnostics.Debug.WriteLine("   Contour to clip is CLOSED");
                 if ((RangeLeft + RangeRight) < PolylineLength)
                 {
 

@@ -510,8 +510,7 @@ namespace NPSTransectTool
                 }
                 catch (Exception ex)
                 {
-                    ErrorMessage = "Error occured. " + ErrorMessage + ". " + ex.Message;
-                    return;
+                    ErrorMessage = "Error occured. " + ErrorMessage + ". " + ex.Message + "\n" + ex.StackTrace;
                 }
 
                 m_NPS.Document.ActiveView.Refresh();

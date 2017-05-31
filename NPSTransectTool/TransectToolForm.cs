@@ -473,8 +473,8 @@ namespace NPSTransectTool
             Util.SetProgressMessage("Clipping Raster", 2);
 
             //clip the dem file to the size of the survey area
-            if (string.IsNullOrEmpty(ErrorMessage))
-                ThisGeoRasterDS = Util.ClipRasterByBndPoly(ThisGeoRasterDS, Convert.ToString(SurveyID), ref ErrorMessage);
+            //if (string.IsNullOrEmpty(ErrorMessage))
+            //    ThisGeoRasterDS = Util.ClipRasterByBndPoly(ThisGeoRasterDS, Convert.ToString(SurveyID), ref ErrorMessage);
 
 
             //if we are replaceing all existing transects for this survey, delete those features now

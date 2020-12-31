@@ -1,0 +1,376 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ArcPad debug="true">
+	<APPLET name="NPSApplet" onload="Call NPSApplet_Load">
+		<FORMS>
+			<FORM name="frmNewSession" caption="New Session" width="245" height="235" onload="Call frmNewSession_Load" tabsvisible="false">
+				<PAGE name="PAGE1" caption="Take Off" sip="false" onquerycancel="Call PreventCloseByOkOrCancel" onvalidate="Call PreventCloseByOkOrCancel">
+					<LABEL name="lblSurveyNumber" y="24" width="89" height="17" x="14" caption="Survey Number:" tooltip="" group="true" border="false" fontsize="12" alignment="right"/>
+					<DATETIME name="dtFlownDate" x="111" y="44" width="115" height="17" defaultvalue="" tooltip="" tabstop="true" border="true" sip="false" fontsize="12"/>
+					<LABEL name="lblFlownDate" y="44" width="91" height="17" x="11" caption="Flown Date:" tooltip="" group="true" border="false" fontsize="12" alignment="right"/>
+					<LABEL name="lblPilot" x="11" y="92" width="91" height="17" caption="Pilot:" tooltip="" group="true" border="false" fontsize="12" alignment="right"/>
+					<COMBOBOX name="cboPilot" x="111" y="92" width="115" height="13" defaultvalue="" listtable="defaultvalues.dbf" listvaluefield="PILOT" listtextfield="PILOT" tooltip="" tabstop="true" border="false" sip="false" limittolist="false" sort="false" fontsize="12"/>
+					<LABEL name="lblObserver1" x="11" y="116" width="91" height="17" caption="Observer One:" tooltip="" group="true" border="false" fontsize="12" alignment="right"/>
+					<COMBOBOX name="cboObserver1" x="111" y="116" width="115" height="13" defaultvalue="" listtable="defaultvalues.dbf" listvaluefield="OBSERVER" listtextfield="OBSERVER" tooltip="" tabstop="true" border="false" sip="false" limittolist="false" sort="false" fontsize="12"/>
+					<COMBOBOX name="cboObserver2" x="111" y="140" width="115" height="13" defaultvalue="" listtable="defaultvalues.dbf" listvaluefield="OBSERVER" listtextfield="OBSERVER" tooltip="" tabstop="true" border="false" sip="false" limittolist="false" sort="false" fontsize="12"/>
+					<LABEL name="lblAircraft" x="11" y="165" width="91" height="17" caption="Aircraft:" tooltip="" group="true" border="false" fontsize="12" alignment="right"/>
+					<COMBOBOX name="cboAircraft" x="111" y="165" width="115" height="13" defaultvalue="" listtable="defaultvalues.dbf" listvaluefield="AIRCRAFT" listtextfield="AIRCRAFT" tooltip="" tabstop="true" border="false" sip="false" limittolist="false" sort="false" fontsize="12"/>
+					<LABEL name="lblObserver2" x="11" y="140" width="91" height="17" caption="Observer Two:" tooltip="" group="true" border="false" fontsize="12" alignment="right"/>
+					<BUTTON name="btnFinish" onclick="Call frmNewSession_OkClick" x="126" y="201" width="87" height="26" caption="Finish" tooltip="" tabstop="true" border="false" fontsize="15" alignment="center"/>
+					<BUTTON name="btnCancel" onclick="Call frmNewSession_Cancel" x="36" y="201" width="87" height="26" caption="Cancel" tooltip="" tabstop="true" border="false" fontsize="15" alignment="center"/>
+					<LABEL name="lblSurveyIDDisplay" x="113" y="24" width="95" height="18" caption="-----" tooltip="" group="true" border="false" fontsize="12"/>
+					<LABEL name="Label1" x="11" y="68" width="91" height="17" caption="Animal:" tooltip="" group="true" border="false" fontsize="12" alignment="right"/>
+					<COMBOBOX name="cboSelAnimal" x="111" y="68" width="115" height="13" defaultvalue="" listtable="" listvaluefield="" listtextfield="" tooltip="" tabstop="true" border="false" sip="false" fontsize="12">
+						<LISTITEM value="Sheep-Short" text="Sheep - Short Form"/>
+						<LISTITEM value="Bear" text="Bear"/>
+						<LISTITEM value="Sheep-Long" text="Sheep - Long Form"/>
+					</COMBOBOX>
+					<LABEL name="Label2" x="3" y="3" width="45" height="17" caption="Survey:" tooltip="" group="true" border="false" fontsize="12" alignment="right"/>
+					<LABEL name="lblSurveyName" x="50" y="3" width="186" height="22" caption="---" tooltip="" group="true" border="false" fontsize="12"/>
+				</PAGE>
+			</FORM>
+			<FORM name="frmMarkAnimal" caption="Mark Animal" width="280" height="380" onload="Call frmMarkAnimal_Load" tabsvisible="false">
+				<PAGE name="PAGE1" caption="Sighting" onquerycancel="Call PreventCloseByOkOrCancel" onvalidate="Call PreventCloseByOkOrCancel">
+					<BUTTON name="btnMarkAnimal" onclick="Call btnMarkAnimal_Click" x="169" y="4" width="107" height="32" caption="Mark Animal" tooltip="" tabstop="true" border="false" fontsize="12" fontstyle="bolditalic" alignment="center"/>
+					<BUTTON name="btnPrevAnimal" x="177" y="170" width="47" height="26" onclick="Call btnPrevAnimal_Clicked" caption="Prev" tooltip="" tabstop="true" border="false" fontsize="12" alignment="center"/>
+					<BUTTON name="btnNextAnimal" x="227" y="170" width="47" height="26" onclick="Call btnNextAnimal_Clicked" caption="Next" tooltip="" tabstop="true" border="false" fontsize="12" alignment="center"/>
+					<BUTTON onclick="Call btnUpdatePosition_Clicked" name="btnUpdatePosition" x="179" y="41" width="97" height="26" caption="Update Position" tooltip="" tabstop="true" border="false" fontsize="12" alignment="center"/>
+					<LISTBOX name="lstAnimalList" x="7" y="67" width="156" height="52" defaultvalue="" listtable="defaultvalues.dbf" listvaluefield="ANIMAL" listtextfield="ANIMAL" tooltip="" tabstop="true" border="true" fontsize="9" hscroll="false"/>
+					<EDIT name="txtGroupSize" x="7" y="22" width="47" height="22" defaultvalue="" tooltip="" tabstop="true" border="true" sip="false" font="Arial" fontsize="18"/>
+					<UPDOWN name="UpDown1" x="57" y="22" width="10" height="22" tooltip="" group="true" border="false" upper="100" buddy="txtGroupSize" alignment="right"/>
+					<LABEL name="Label1" x="8" y="50" width="43" height="15" caption="Species:" tooltip="" group="true" border="false" fontsize="9"/>
+					<LABEL name="Label2" x="2" y="2" width="51" height="17" caption="Group Size:" tooltip="" group="true" border="false" fontsize="9"/>
+					<LABEL name="Label3" x="10" y="212" width="53" height="18" caption="% Cover:" tooltip="" group="true" border="false" fontsize="9"/>
+					<LABEL name="Label4" x="77" y="212" width="50" height="18" caption="% Snow:" tooltip="" group="true" border="false" fontsize="9"/>
+					<LABEL name="Label5" x="7" y="261" width="90" height="17" caption="Activity:" tooltip="" group="true" border="false" fontsize="9"/>
+					<LISTBOX name="lstGroupType" x="6" y="146" width="157" height="61" defaultvalue="" listtable="defaultvalues.dbf" listvaluefield="GROUPTYPE" listtextfield="GROUPTYPE" tooltip="" tabstop="true" border="true" sort="false" fontsize="9" hscroll="false"/>
+					<COMBOBOX name="txtPerCover" x="7" y="231" width="60" height="13" defaultvalue="" listtable="defaultvalues.dbf" listvaluefield="INCRBYTEN" listtextfield="INCRBYTEN" tooltip="" tabstop="true" border="false" sip="false" limittolist="false" sort="false" fontsize="15"/>
+					<COMBOBOX name="txtSnow" x="73" y="231" width="60" height="13" defaultvalue="" listtable="defaultvalues.dbf" listvaluefield="INCRBYTEN" listtextfield="INCRBYTEN" tooltip="" tabstop="true" border="false" sip="false" limittolist="false" sort="false" fontsize="15"/>
+					<LISTBOX name="lstActivity" x="7" y="280" width="106" height="90" defaultvalue="" listtable="defaultvalues.dbf" listvaluefield="ACTIVITY" listtextfield="ACTIVITY" tooltip="" tabstop="true" border="true" sort="false" fontsize="9" hscroll="false"/>
+					<LABEL name="Label6" x="119" y="260" width="61" height="15" caption="Who saw it?:" tooltip="" group="true" border="false" fontsize="9"/>
+					<BUTTON name="btnPilotSawIt" x="117" y="278" width="71" height="29" onclick="frmMarkAnimal_Event &quot;btnPilotSawIt&quot;,&quot;onclick&quot;" caption="Pilot" tooltip="" tabstop="true" border="false" fontsize="12" alignment="center"/>
+					<BUTTON onclick="MyUpDown &quot;frmMarkAnimal&quot;,&quot;PAGE1&quot;,&quot;txtPilotRept&quot;,&quot;add&quot;,10,1,1" name="btnUp" x="252" y="278" width="23" height="29" caption="&gt;" tooltip="" tabstop="true" border="false" fontsize="18" alignment="center"/>
+					<EDIT name="txtPilotRept" x="217" y="279" width="32" height="29" defaultvalue="" tooltip="" tabstop="true" border="true" sip="false" fontsize="18"/>
+					<BUTTON name="btnDown" x="191" y="278" width="23" height="29" onclick="MyUpDown &quot;frmMarkAnimal&quot;,&quot;PAGE1&quot;,&quot;txtPilotRept&quot;,&quot;minus&quot;,10,1,1" caption="&lt;" tooltip="" tabstop="true" border="false" fontsize="18" alignment="center"/>
+					<BUTTON name="btnObsSawIt" x="117" y="310" width="71" height="29" onclick="frmMarkAnimal_Event &quot;btnObsSawIt&quot;,&quot;onclick&quot;" caption="Observer" tooltip="" tabstop="true" border="false" fontsize="12" alignment="center"/>
+					<BUTTON onclick="MyUpDown &quot;frmMarkAnimal&quot;,&quot;PAGE1&quot;,&quot;txtObsRept&quot;,&quot;add&quot;,10,1,1" name="btnUp2" x="253" y="310" width="23" height="29" caption="&gt;" tooltip="" tabstop="true" border="false" fontsize="18" alignment="center"/>
+					<EDIT name="txtObsRept" x="217" y="310" width="32" height="29" defaultvalue="" tooltip="" tabstop="true" border="true" sip="false" fontsize="18"/>
+					<BUTTON onclick="MyUpDown &quot;frmMarkAnimal&quot;,&quot;PAGE1&quot;,&quot;txtObsRept&quot;,&quot;minus&quot;,10,1,1" name="btnDown2" x="191" y="310" width="23" height="29" caption="&lt;" tooltip="" tabstop="true" border="false" fontsize="18" alignment="center"/>
+					<BUTTON name="btnBothSawIt" x="117" y="342" width="71" height="29" onclick="frmMarkAnimal_Event &quot;btnBothSawIt&quot;,&quot;onclick&quot;" caption="Both" tooltip="" tabstop="true" border="false" fontsize="12" alignment="center"/>
+					<LABEL name="Label7" x="5" y="129" width="77" height="15" caption="Group Type:" tooltip="" group="true" border="false" fontsize="9"/>
+					<LABEL name="Label8" x="193" y="254" width="81" height="20" caption="Repeatability Assessment:" tooltip="" group="true" border="false" fontsize="9" alignment="center"/>
+					<BUTTON name="btnMarkHorizon" onclick="Call btnMarkHorizon_Click" x="178" y="83" width="97" height="26" caption="Mark Horizon" tooltip="" tabstop="true" border="false" fontsize="12" alignment="center"/>
+					<BUTTON name="btnUseLastHorizon" x="177" y="139" width="97" height="26" onclick="Call btnUseLastHorizon_Clicked" caption="Use Last Horizon" tooltip="" tabstop="true" border="false" fontsize="12" alignment="center"/>
+					<BUTTON onclick="Call btnUpdateHorizon_Clicked" name="btnUpdateHorizon" x="178" y="111" width="97" height="26" caption="Update Horizon" tooltip="" tabstop="true" border="false" fontsize="12" alignment="center"/>
+					<BUTTON name="btnResumeTransect" onclick="Call frmMarkAnimal_OkClick" x="169" y="207" width="107" height="32" caption="Resume Transect" tooltip="" tabstop="true" border="false" fontsize="12" fontstyle="bolditalic" alignment="center"/>
+					<EDIT name="txtAnimalID" x="113" y="22" width="37" height="22" defaultvalue="" tooltip="" tabstop="false" border="true" readonly="true" sip="false" fontsize="18"/>
+					<LABEL name="Label9" x="117" y="3" width="47" height="18" caption="Animal ID:" tooltip="" group="true" border="false" fontsize="9"/>
+					<EDIT name="txtTransectID" x="70" y="22" width="37" height="22" defaultvalue="" tooltip="" tabstop="true" border="true" readonly="true" sip="false" fontsize="18"/>
+					<LABEL name="Label10" x="70" y="3" width="47" height="18" caption="Transect ID:" tooltip="" group="true" border="false" fontsize="9"/>
+					<BUTTON onclick="frmMarkAnimal_Event &quot;btnCloseEdit&quot;,&quot;onclick&quot;" name="btnCloseEdit" x="180" y="4" width="95" height="26" caption="Close" tooltip="" tabstop="true" border="false" fontsize="12" alignment="center"/>
+				</PAGE>
+			</FORM>
+			<FORM name="frmNewTransect" caption="New Transect" onload="Call frmNewTransect_Load" width="280" height="230" tabsvisible="false">
+				<PAGE name="PAGE1" caption="Page 1" sip="false" onquerycancel="Call PreventCloseByOkOrCancel" onvalidate="Call PreventCloseByOkOrCancel">
+					<BUTTON onclick="frmNewTransect_Event &quot;btnPilotLeft&quot;,&quot;onclick&quot;" name="btnPilotLeft" x="95" y="66" width="80" height="23" caption="**Left**" tooltip="" tabstop="true" border="false" fontsize="12" alignment="center"/>
+					<BUTTON onclick="frmNewTransect_Event &quot;btnPilotRight&quot;,&quot;onclick&quot;" name="btnPilotRight" x="180" y="66" width="80" height="23" caption="Right" tooltip="" tabstop="true" border="false" fontsize="12" alignment="center"/>
+					<BUTTON name="btnLeft1" x="95" y="95" width="80" height="23" onclick="frmNewTransect_Event &quot;btnLeft1&quot;,&quot;onclick&quot;" caption="**Left**" tooltip="" tabstop="true" border="false" fontsize="12" alignment="center"/>
+					<BUTTON name="btnRight1" x="180" y="95" width="80" height="23" onclick="frmNewTransect_Event &quot;btnRight1&quot;,&quot;onclick&quot;" caption="Right" tooltip="" tabstop="true" border="false" fontsize="12" alignment="center"/>
+					<LABEL name="lblObserver1" x="5" y="97" width="81" height="17" caption="Johnson" tooltip="" group="true" border="false" fontsize="12" alignment="right"/>
+					<LABEL name="lblTransect" x="2" y="17" width="91" height="17" caption="Transect ID:" tooltip="" group="true" border="false" font="Arial" fontsize="12" alignment="right"/>
+					<BUTTON name="btnLeft2" x="95" y="124" width="80" height="23" onclick="frmNewTransect_Event &quot;btnLeft2&quot;,&quot;onclick&quot;" caption="**Left**" tooltip="" tabstop="true" border="false" fontsize="12" alignment="center"/>
+					<BUTTON name="btnRight2" x="180" y="124" width="80" height="23" onclick="frmNewTransect_Event &quot;btnRight2&quot;,&quot;onclick&quot;" caption="Right" tooltip="" tabstop="true" border="false" fontsize="12" alignment="center"/>
+					<LABEL name="lblObserverList" x="16" y="44" width="91" height="17" caption="Observer" tooltip="" group="true" border="false" fontsize="12" alignment="center"/>
+					<LABEL name="lblDirectionList" x="141" y="44" width="91" height="17" caption="Direction" tooltip="" group="true" border="false" fontsize="12" alignment="center"/>
+					<LABEL name="lblObserver2" y="124" width="81" height="17" x="7" caption="Anderson" tooltip="" group="true" border="false" fontsize="12" alignment="right"/>
+					<BUTTON name="btnCancel" x="55" y="196" width="87" height="26" onclick="Call frmNewTransect_CancelClick" caption="Cancel" tooltip="" tabstop="true" border="false" fontsize="15" alignment="center"/>
+					<BUTTON name="btnFinished" x="149" y="196" width="87" height="26" onclick="Call  frmNewTransect_OkClick" caption="Finish" tooltip="" tabstop="true" border="false" fontsize="15" alignment="center"/>
+					<LABEL name="Label1" x="8" y="68" width="81" height="17" caption="Pilot" tooltip="" group="true" border="false" fontsize="12" alignment="right"/>
+					<EDIT name="txtTransectID" x="97" y="8" width="63" height="26" defaultvalue="" tooltip="" tabstop="true" border="true" sip="false" fontsize="18"/>
+					<BUTTON name="btnEnterTransectID" x="163" y="8" width="40" height="26" onclick="frmNewTransect_Event &quot;btnEnterTransectID&quot;,&quot;onclick&quot;" caption="+" tooltip="" tabstop="true" border="false" fontsize="18" alignment="center"/>
+				</PAGE>
+			</FORM>
+			<FORM name="frmAlertEndTransect" caption="Target Length Reached" width="280" height="130" tabsvisible="false">
+				<PAGE name="PAGE1" caption="Page 1" sip="false" onquerycancel="Call PreventCloseByOkOrCancel" onvalidate="Call PreventCloseByOkOrCancel">
+					<LABEL name="Label1" x="7" y="6" width="267" height="77" caption="WARNING, You have reached the Target Length for this Transect. Click OK to close this window.and keey flying or click End Transect to end this Transect" tooltip="" group="true" border="false" fontsize="15"/>
+					<BUTTON name="btnOK" x="17" y="89" width="117" height="31" onclick="frmAlertEndTransect_Event &quot;btnOK&quot;,&quot;onclick&quot;" caption="OK" tooltip="" tabstop="true" border="false" fontsize="18" alignment="center"/>
+					<BUTTON name="btnEndTransect" x="140" y="89" width="120" height="31" onclick="frmAlertEndTransect_Event &quot;btnEndTransect&quot;,&quot;onclick&quot;" caption="End Transect" tooltip="" tabstop="true" border="false" fontsize="18" alignment="center"/>
+				</PAGE>
+			</FORM>
+			<FORM name="frmFindTransect" caption="Find Transect" width="170" height="150" tabsvisible="false" oncancel="Call FindTransect_Event(&quot;load&quot;)">
+				<PAGE name="PAGE1" caption="Page 1" sip="false">
+					<LABEL name="Label1" x="14" y="5" width="147" height="34" caption="Enter a TransectID and click Find" tooltip="" group="true" border="false" fontsize="12"/>
+					<EDIT name="txtTransectID" x="17" y="50" width="89" height="28" defaultvalue="" tooltip="" tabstop="true" border="true" sip="false" fontsize="18"/>
+					<BUTTON name="btnFindTransect" x="17" y="86" width="130" height="29" onclick="Call FindTransect_Event(&quot;find&quot;)" caption="Find" tooltip="" tabstop="true" border="false" fontsize="15" alignment="center"/>
+					<BUTTON name="btnClose" x="17" y="117" width="130" height="28" onclick="Call FindTransect_Event(&quot;close&quot;)" caption="Close" tooltip="" tabstop="true" border="false" fontsize="15" alignment="center"/>
+					<BUTTON onclick="Call FindTransect_Event(&quot;easynumber&quot;)" name="btnEasyNumber" x="107" y="50" width="40" height="28" caption="+" tooltip="" tabstop="true" border="false" fontsize="18" alignment="center"/>
+				</PAGE>
+			</FORM>
+			<FORM name="frmEasyNumbers" caption="Easy Numbers" width="190" height="270" tabsvisible="false" onload="Call EasyNumbers_Click(&quot;load&quot;)">
+				<PAGE name="PAGE1" caption="Page 1" sip="false" onquerycancel="Call PreventCloseByOkOrCancel" onvalidate="Call PreventCloseByOkOrCancel">
+					<BUTTON onclick="Call EasyNumbers_Click(&quot;1&quot;)" name="btnOne" x="6" y="56" width="55" height="36" caption="1" tooltip="" tabstop="true" border="false" fontsize="18" alignment="center"/>
+					<BUTTON onclick="Call EasyNumbers_Click(&quot;2&quot;)" name="btnTwo" x="65" y="56" width="55" height="36" caption="2" tooltip="" tabstop="true" border="false" fontsize="18" alignment="center"/>
+					<BUTTON onclick="Call EasyNumbers_Click(&quot;3&quot;)" name="btnThree" x="126" y="56" width="55" height="36" caption="3" tooltip="" tabstop="true" border="false" fontsize="18" alignment="center"/>
+					<BUTTON onclick="Call EasyNumbers_Click(&quot;4&quot;)" name="btnFour" x="5" y="95" width="55" height="36" caption="4" tooltip="" tabstop="true" border="false" fontsize="18" alignment="center"/>
+					<BUTTON onclick="Call EasyNumbers_Click(&quot;5&quot;)" name="btnFive" x="65" y="95" width="55" height="36" caption="5" tooltip="" tabstop="true" border="false" fontsize="18" alignment="center"/>
+					<BUTTON onclick="Call EasyNumbers_Click(&quot;6&quot;)" name="btnSix" x="125" y="95" width="55" height="36" caption="6" tooltip="" tabstop="true" border="false" fontsize="18" alignment="center"/>
+					<BUTTON onclick="Call EasyNumbers_Click(&quot;7&quot;)" name="btnSeven" x="5" y="135" width="55" height="36" caption="7" tooltip="" tabstop="true" border="false" fontsize="18" alignment="center"/>
+					<BUTTON onclick="Call EasyNumbers_Click(&quot;8&quot;)" name="btnEight" x="65" y="135" width="55" height="36" caption="8" tooltip="" tabstop="true" border="false" fontsize="18" alignment="center"/>
+					<BUTTON onclick="Call EasyNumbers_Click(&quot;9&quot;)" name="btnNine" x="125" y="135" width="55" height="36" caption="9" tooltip="" tabstop="true" border="false" fontsize="18" alignment="center"/>
+					<BUTTON onclick="Call EasyNumbers_Click(&quot;0&quot;)" name="btnZero" x="65" y="175" width="55" height="36" caption="0" tooltip="" tabstop="true" border="false" fontsize="18" alignment="center"/>
+					<BUTTON onclick="Call EasyNumbers_Click(&quot;ok&quot;)" name="btnOkay" x="3" y="238" width="89" height="29" caption="OK" tooltip="" tabstop="true" border="false" fontsize="18" alignment="center"/>
+					<BUTTON onclick="Call EasyNumbers_Click(&quot;cancel&quot;)" name="btnCancel" x="95" y="238" width="90" height="29" caption="Cancel" tooltip="" tabstop="true" border="false" fontsize="18" alignment="center"/>
+					<EDIT name="txtValue" x="6" y="10" width="177" height="37" defaultvalue="" tooltip="" tabstop="true" border="true" readonly="true" sip="false" fontsize="21" alignment="right"/>
+					<BUTTON onclick="Call EasyNumbers_Click(&quot;clr&quot;)" name="btnClear" x="5" y="175" width="55" height="36" caption="Clr" tooltip="" tabstop="true" border="false" fontsize="18" alignment="center"/>
+					<BUTTON onclick="Call EasyNumbers_Click(&quot;bck&quot;)" name="btnBack" x="125" y="175" width="55" height="36" caption="Bck" tooltip="" tabstop="true" border="false" fontsize="18" alignment="center"/>
+				</PAGE>
+			</FORM>
+			<FORM name="frmSheepForm" caption="Sheep - Short Form" width="285" height="380" tabsvisible="false" onload="Call frmSheepForm_Event(&quot;frmSheepForm&quot;,&quot;onload&quot;)">
+				<PAGE name="PAGE1" caption="Page 1" sip="false" onquerycancel="Call PreventCloseByOkOrCancel" onvalidate="Call PreventCloseByOkOrCancel">
+					<LABEL name="Label1" x="15" y="34" width="94" height="17" caption="Ewe-like:" tooltip="" group="true" border="false" fontsize="12" alignment="right"/>
+					<EDIT name="txtEweLike" x="115" y="33" width="40" height="20" defaultvalue="" onchange="frmSheepForm_Event &quot;txtEweLike&quot;,&quot;onchange&quot;" onsetfocus="frmSheepForm_Event &quot;txtEweLike&quot;,&quot;onfocus&quot;" onkillfocus="frmSheepForm_Event &quot;txtEweLike&quot;,&quot;onblur&quot;" tooltip="" tabstop="true" border="true" sip="false" fontsize="18"/>
+					<BUTTON onclick="Call frmSheepForm_Event(&quot;btnMarkAnimal&quot;,&quot;onclick&quot;)" name="btnMarkAnimal" x="159" y="43" width="120" height="30" caption="Mark Animal" tooltip="" tabstop="true" border="false" fontsize="12" fontstyle="bolditalic" alignment="center"/>
+					<BUTTON onclick="Call frmSheepForm_Event(&quot;btnPrev&quot;,&quot;onclick&quot;)" name="btnPrev" x="179" width="48" height="26" caption="Prev" tooltip="" tabstop="true" border="false" fontsize="12" alignment="center"/>
+					<BUTTON onclick="Call frmSheepForm_Event(&quot;btnNext&quot;,&quot;onclick&quot;)" name="btnNext" x="231" width="48" height="26" caption="Next" tooltip="" tabstop="true" border="false" fontsize="12" alignment="center"/>
+					<BUTTON onclick="Call frmSheepForm_Event(&quot;btnUpdatePosition&quot;,&quot;onclick&quot;)" name="btnUpdatePosition" x="180" y="77" width="100" height="26" caption="Update Position" tooltip="" tabstop="true" border="false" fontsize="12" alignment="center"/>
+					<BUTTON onclick="Call frmSheepForm_Event(&quot;btnMarkHorizon&quot;,&quot;onclick&quot;)" name="btnMarkHorizon" x="179" y="115" width="100" height="26" caption="Mark Horizon" tooltip="" tabstop="true" border="false" fontsize="12" alignment="center"/>
+					<BUTTON onclick="Call frmSheepForm_Event(&quot;btnUpdateHorizon&quot;,&quot;onclick&quot;)" name="btnUpdateHorizon" x="179" y="144" width="100" height="26" caption="Update Horizon" tooltip="" tabstop="true" border="false" fontsize="12" alignment="center"/>
+					<BUTTON onclick="Call frmSheepForm_Event(&quot;btnUseLastHorizon&quot;,&quot;onclick&quot;)" name="btnUseLastHorizon" x="179" y="173" width="100" height="26" caption="Use Last Horizon" tooltip="" tabstop="true" border="false" fontsize="12" alignment="center"/>
+					<BUTTON onclick="Call frmSheepForm_Event(&quot;btnResumeTransect&quot;,&quot;onclick&quot;)" name="btnResumeTransect" x="159" y="341" width="120" height="30" caption="Resume Transect" tooltip="" tabstop="true" border="false" fontsize="12" fontstyle="bolditalic" alignment="center"/>
+					<EDIT name="txtLambs" x="115" y="57" width="40" height="20" defaultvalue="" onchange="frmSheepForm_Event &quot;txtLambs&quot;,&quot;onchange&quot;" onsetfocus="frmSheepForm_Event &quot;txtLambs&quot;,&quot;onfocus&quot;" onkillfocus="frmSheepForm_Event &quot;txtLambs&quot;,&quot;onblur&quot;" tooltip="" tabstop="true" border="true" sip="false" fontsize="18"/>
+					<LABEL name="Label2" x="11" y="57" width="97" height="17" caption="Lambs:" tooltip="" group="true" border="false" fontsize="12" alignment="right"/>
+					<LABEL name="Label3" x="49" y="92" width="57" height="17" caption="&lt; full-curl:" tooltip="" group="true" border="false" fontsize="12" alignment="right"/>
+					<LABEL name="Label4" x="13" y="116" width="93" height="17" caption="≥ full-curl:" tooltip="" group="true" border="false" fontsize="12" alignment="right"/>
+					<LABEL name="Label5" x="11" y="140" width="97" height="17" caption="Unclassified rams:" tooltip="" group="true" border="false" fontsize="12" alignment="right"/>
+					<LABEL name="Label6" x="9" y="172" width="97" height="18" caption="Unclassified sheep:" tooltip="" group="true" border="false" fontsize="12" alignment="right"/>
+					<LABEL name="Label7" x="17" y="195" width="89" height="17" caption="Total:" tooltip="" group="true" border="false" fontsize="12" fontstyle="bolditalic" alignment="right"/>
+					<EDIT name="txtLT_FullCurlRam" x="115" y="91" width="40" height="20" defaultvalue="" onchange="frmSheepForm_Event &quot;txtLT_FullCurlRam&quot;,&quot;onchange&quot;" onkillfocus="frmSheepForm_Event &quot;txtLT_FullCurlRam&quot;,&quot;onblur&quot;" onsetfocus="frmSheepForm_Event &quot;txtLT_FullCurlRam&quot;,&quot;onfocus&quot;" tooltip="" tabstop="true" border="true" sip="false" fontsize="18"/>
+					<EDIT name="txtGT_FullCurlRam" x="115" y="114" width="40" height="20" defaultvalue="" onchange="frmSheepForm_Event &quot;txtGT_FullCurlRam&quot;,&quot;onchange&quot;" onkillfocus="frmSheepForm_Event &quot;txtGT_FullCurlRam&quot;,&quot;onblur&quot;" onsetfocus="frmSheepForm_Event &quot;txtGT_FullCurlRam&quot;,&quot;onfocus&quot;" tooltip="" tabstop="true" border="true" sip="false" fontsize="18"/>
+					<EDIT name="txtUnclassifiedRams" x="115" y="137" width="40" height="20" defaultvalue="" onchange="frmSheepForm_Event &quot;txtUnclassifiedRams&quot;,&quot;onchange&quot;" onkillfocus="frmSheepForm_Event &quot;txtUnclassifiedRams&quot;,&quot;onblur&quot;" onsetfocus="frmSheepForm_Event &quot;txtUnclassifiedRams&quot;,&quot;onfocus&quot;" tooltip="" tabstop="true" border="true" sip="false" fontsize="18"/>
+					<EDIT name="txtUnclassifiedSheep" x="115" y="171" width="40" height="20" defaultvalue="" onchange="frmSheepForm_Event &quot;txtUnclassifiedSheep&quot;,&quot;onchange&quot;" onkillfocus="frmSheepForm_Event &quot;txtUnclassifiedSheep&quot;,&quot;onblur&quot;" onsetfocus="frmSheepForm_Event &quot;txtUnclassifiedSheep&quot;,&quot;onfocus&quot;" tooltip="" tabstop="true" border="true" sip="false" fontsize="18"/>
+					<EDIT name="txtTotal" x="115" y="193" width="40" height="20" defaultvalue="" tooltip="" tabstop="true" border="true" readonly="true" sip="false" fontsize="18"/>
+					<BUTTON name="btn1" x="4" y="223" width="46" height="31" onclick="Call frmSheepForm_Event(&quot;btn1&quot;,&quot;onclick&quot;)" caption="1" tooltip="" tabstop="true" border="false" fontsize="18" alignment="center"/>
+					<BUTTON name="btn2" x="52" y="223" width="46" height="31" onclick="Call frmSheepForm_Event(&quot;btn2&quot;,&quot;onclick&quot;)" caption="2" tooltip="" tabstop="true" border="false" fontsize="18" alignment="center"/>
+					<BUTTON name="btn3" x="100" y="223" width="46" height="31" onclick="Call frmSheepForm_Event(&quot;btn3&quot;,&quot;onclick&quot;)" caption="3" tooltip="" tabstop="true" border="false" fontsize="18" alignment="center"/>
+					<BUTTON name="btn4" x="3" y="256" width="46" height="31" onclick="Call frmSheepForm_Event(&quot;btn4&quot;,&quot;onclick&quot;)" caption="4" tooltip="" tabstop="true" border="false" fontsize="18" alignment="center"/>
+					<BUTTON name="btn5" x="51" y="256" width="46" height="31" onclick="Call frmSheepForm_Event(&quot;btn5&quot;,&quot;onclick&quot;)" caption="5" tooltip="" tabstop="true" border="false" fontsize="18" alignment="center"/>
+					<BUTTON name="btn6" x="99" y="256" width="46" height="31" onclick="Call frmSheepForm_Event(&quot;btn6&quot;,&quot;onclick&quot;)" caption="6" tooltip="" tabstop="true" border="false" fontsize="18" alignment="center"/>
+					<BUTTON name="btn7" x="3" y="289" width="46" height="31" onclick="Call frmSheepForm_Event(&quot;btn7&quot;,&quot;onclick&quot;)" caption="7" tooltip="" tabstop="true" border="false" fontsize="18" alignment="center"/>
+					<BUTTON name="btn8" x="51" y="289" width="46" height="31" onclick="Call frmSheepForm_Event(&quot;btn8&quot;,&quot;onclick&quot;)" caption="8" tooltip="" tabstop="true" border="false" fontsize="18" alignment="center"/>
+					<BUTTON name="btn9" x="99" y="289" width="46" height="31" onclick="Call frmSheepForm_Event(&quot;btn9&quot;,&quot;onclick&quot;)" caption="9" tooltip="" tabstop="true" border="false" fontsize="18" alignment="center"/>
+					<BUTTON name="btn0" x="51" y="322" width="46" height="31" onclick="Call frmSheepForm_Event(&quot;btn0&quot;,&quot;onclick&quot;)" caption="0" tooltip="" tabstop="true" border="false" fontsize="18" alignment="center"/>
+					<BUTTON name="btnClear" x="3" y="322" width="46" height="31" onclick="Call frmSheepForm_Event(&quot;btnClear&quot;,&quot;onclick&quot;)" caption="Clr" tooltip="" tabstop="true" border="false" fontsize="18" alignment="center"/>
+					<EDIT name="txtTransectID" x="52" width="41" height="20" defaultvalue="" tooltip="" tabstop="true" border="true" readonly="true" sip="false" fontsize="18"/>
+					<LABEL name="Label8" x="2" width="49" height="17" caption="Transect ID:" tooltip="" group="true" border="false" fontsize="9"/>
+					<LABEL name="Label9" x="99" width="27" height="22" caption="Grp #:" tooltip="" group="true" border="false" fontsize="9"/>
+					<EDIT name="txtGroupID" x="125" width="30" height="20" defaultvalue="" tooltip="" tabstop="true" border="true" readonly="true" sip="false" fontsize="18"/>
+					<LABEL name="Label10" x="7" y="164" width="150" height="3" caption="" tooltip="" group="true" border="true" fontsize="12"/>
+					<LABEL name="Label11" x="7" y="81" width="150" height="3" caption="-------" tooltip="" group="true" border="true" fontsize="12"/>
+					<LABEL name="Label12" x="5" y="89" width="42" height="21" caption="Rams" tooltip="" group="true" border="false" fontsize="12"/>
+					<LISTBOX name="lstActivity" x="154" y="241" width="123" height="91" defaultvalue="" listtable="defaultvalues.dbf" listvaluefield="ACTIVITY" listtextfield="ACTIVITY" tooltip="" tabstop="true" border="true" sort="false" fontsize="12" hscroll="false"/>
+					<LABEL name="lblActivity" x="156" y="220" width="61" height="17" caption="Activity:" tooltip="" group="true" border="false" fontsize="12"/>
+					<LABEL name="lblFormMode" x="3" y="363" width="85" height="14" caption="---" tooltip="" group="true" border="false"/>
+					<BUTTON onclick="Call frmSheepForm_Event(&quot;btnCloseEdit&quot;,&quot;onclick&quot;)" name="btnCloseEdit" x="180" y="47" width="100" height="26" caption="Close" tooltip="" tabstop="true" border="false" fontsize="12" fontstyle="bolditalic" alignment="center"/>
+				</PAGE>
+			</FORM>
+			<FORM name="frmSheepFormLong" caption="Sheep - Long Form" width="285" height="425" tabsvisible="false" onload="Call frmSheepForm_Event(&quot;frmSheepForm&quot;,&quot;onload&quot;)">
+				<PAGE name="PAGE1" caption="Page 1" sip="false" onquerycancel="Call PreventCloseByOkOrCancel" onvalidate="Call PreventCloseByOkOrCancel">
+					<LABEL name="Label1" x="11" y="54" width="50" height="17" caption="Ewe-like:" tooltip="" group="true" border="false" fontsize="12" alignment="right"/>
+					<EDIT name="txtEweLike" x="63" y="54" width="33" height="20" defaultvalue="" onchange="frmSheepForm_Event &quot;txtEweLike&quot;,&quot;onchange&quot;" onsetfocus="frmSheepForm_Event &quot;txtEweLike&quot;,&quot;onfocus&quot;" onkillfocus="frmSheepForm_Event &quot;txtEweLike&quot;,&quot;onblur&quot;" tooltip="" tabstop="true" border="true" sip="false" fontsize="18"/>
+					<BUTTON onclick="Call frmSheepForm_Event(&quot;btnMarkAnimal&quot;,&quot;onclick&quot;)" name="btnMarkAnimal" x="163" y="32" width="116" height="36" caption="Mark Animal" tooltip="" tabstop="true" border="false" fontsize="13" fontstyle="bolditalic" alignment="center"/>
+					<BUTTON onclick="Call frmSheepForm_Event(&quot;btnPrev&quot;,&quot;onclick&quot;)" name="btnPrev" x="179" width="48" height="26" caption="Prev" tooltip="" tabstop="true" border="false" fontsize="12" alignment="center"/>
+					<BUTTON onclick="Call frmSheepForm_Event(&quot;btnNext&quot;,&quot;onclick&quot;)" name="btnNext" x="231" width="48" height="26" caption="Next" tooltip="" tabstop="true" border="false" fontsize="12" alignment="center"/>
+					<BUTTON onclick="Call frmSheepForm_Event(&quot;btnUpdatePosition&quot;,&quot;onclick&quot;)" name="btnUpdatePosition" x="179" y="71" width="100" height="26" caption="Update Position" tooltip="" tabstop="true" border="false" fontsize="12" alignment="center"/>
+					<BUTTON onclick="Call frmSheepForm_Event(&quot;btnMarkHorizon&quot;,&quot;onclick&quot;)" name="btnMarkHorizon" x="179" y="115" width="100" height="26" caption="Mark Horizon" tooltip="" tabstop="true" border="false" fontsize="12" alignment="center"/>
+					<BUTTON onclick="Call frmSheepForm_Event(&quot;btnUpdateHorizon&quot;,&quot;onclick&quot;)" name="btnUpdateHorizon" x="179" y="144" width="100" height="26" caption="Update Horizon" tooltip="" tabstop="true" border="false" fontsize="12" alignment="center"/>
+					<BUTTON onclick="Call frmSheepForm_Event(&quot;btnUseLastHorizon&quot;,&quot;onclick&quot;)" name="btnUseLastHorizon" x="179" y="173" width="100" height="26" caption="Use Last Horizon" tooltip="" tabstop="true" border="false" fontsize="12" alignment="center"/>
+					<BUTTON onclick="Call frmSheepForm_Event(&quot;btnResumeTransect&quot;,&quot;onclick&quot;)" name="btnResumeTransect" x="161" y="377" width="116" height="36" caption="Resume Transect" tooltip="" tabstop="true" border="false" fontsize="13" fontstyle="bolditalic" alignment="center"/>
+					<EDIT name="txtLambs" x="63" y="84" width="33" height="20" defaultvalue="" onchange="frmSheepForm_Event &quot;txtLambs&quot;,&quot;onchange&quot;" onsetfocus="frmSheepForm_Event &quot;txtLambs&quot;,&quot;onfocus&quot;" onkillfocus="frmSheepForm_Event &quot;txtLambs&quot;,&quot;onblur&quot;" tooltip="" tabstop="true" border="true" sip="false" fontsize="18"/>
+					<LABEL name="Label2" x="15" y="84" width="44" height="17" caption="Lambs:" tooltip="" group="true" border="false" fontsize="12" alignment="right"/>
+					<LABEL name="Label3" x="29" y="119" width="29" height="17" caption="&lt;½:" tooltip="" group="true" border="false" fontsize="12" alignment="right"/>
+					<LABEL name="Label4" x="28" y="138" width="30" height="19" caption="½:" tooltip="" group="true" border="false" fontsize="12" alignment="right"/>
+					<LABEL name="Label5" x="95" y="183" width="70" height="22" caption="Unclassified rams:" tooltip="" group="true" border="false" fontsize="12" alignment="right"/>
+					<LABEL name="Label6" x="1" y="239" width="57" height="25" caption="Unclassified sheep:" tooltip="" group="true" border="false" fontsize="12" alignment="right"/>
+					<LABEL name="Label7" x="17" y="265" width="41" height="18" caption="Total:" tooltip="" group="true" border="false" fontsize="12" fontstyle="bolditalic" alignment="right"/>
+					<EDIT name="txtLT_FullCurlRam" x="63" y="184" width="33" height="20" defaultvalue="" onchange="frmSheepForm_Event &quot;txtLT_FullCurlRam&quot;,&quot;onchange&quot;" onkillfocus="frmSheepForm_Event &quot;txtLT_FullCurlRam&quot;,&quot;onblur&quot;" onsetfocus="frmSheepForm_Event &quot;txtLT_FullCurlRam&quot;,&quot;onfocus&quot;" tooltip="" tabstop="true" border="true" sip="false" fontsize="18"/>
+					<EDIT name="txtGT_FullCurlRam" x="63" y="207" width="33" height="20" defaultvalue="" onchange="frmSheepForm_Event &quot;txtGT_FullCurlRam&quot;,&quot;onchange&quot;" onkillfocus="frmSheepForm_Event &quot;txtGT_FullCurlRam&quot;,&quot;onblur&quot;" onsetfocus="frmSheepForm_Event &quot;txtGT_FullCurlRam&quot;,&quot;onfocus&quot;" tooltip="" tabstop="true" border="true" sip="false" fontsize="18"/>
+					<EDIT name="txtUnclassifiedRams" x="131" y="207" width="33" height="20" defaultvalue="" onchange="frmSheepForm_Event &quot;txtUnclassifiedRams&quot;,&quot;onchange&quot;" onkillfocus="frmSheepForm_Event &quot;txtUnclassifiedRams&quot;,&quot;onblur&quot;" onsetfocus="frmSheepForm_Event &quot;txtUnclassifiedRams&quot;,&quot;onfocus&quot;" tooltip="" tabstop="true" border="true" sip="false" fontsize="18"/>
+					<EDIT name="txtUnclassifiedSheep" x="63" y="239" width="33" height="20" defaultvalue="" onchange="frmSheepForm_Event &quot;txtUnclassifiedSheep&quot;,&quot;onchange&quot;" onkillfocus="frmSheepForm_Event &quot;txtUnclassifiedSheep&quot;,&quot;onblur&quot;" onsetfocus="frmSheepForm_Event &quot;txtUnclassifiedSheep&quot;,&quot;onfocus&quot;" tooltip="" tabstop="true" border="true" sip="false" fontsize="18"/>
+					<EDIT name="txtTotal" x="63" y="262" width="33" height="20" defaultvalue="" tooltip="" tabstop="true" border="true" readonly="true" sip="false" fontsize="18"/>
+					<BUTTON name="btn1" x="3" y="294" width="46" height="31" onclick="Call frmSheepForm_Event(&quot;btn1&quot;,&quot;onclick&quot;)" caption="1" tooltip="" tabstop="true" border="false" fontsize="18" alignment="center"/>
+					<BUTTON name="btn2" x="51" y="294" width="46" height="31" onclick="Call frmSheepForm_Event(&quot;btn2&quot;,&quot;onclick&quot;)" caption="2" tooltip="" tabstop="true" border="false" fontsize="18" alignment="center"/>
+					<BUTTON name="btn3" x="100" y="294" width="46" height="31" onclick="Call frmSheepForm_Event(&quot;btn3&quot;,&quot;onclick&quot;)" caption="3" tooltip="" tabstop="true" border="false" fontsize="18" alignment="center"/>
+					<BUTTON name="btn4" x="4" y="326" width="46" height="31" onclick="Call frmSheepForm_Event(&quot;btn4&quot;,&quot;onclick&quot;)" caption="4" tooltip="" tabstop="true" border="false" fontsize="18" alignment="center"/>
+					<BUTTON name="btn5" x="51" y="326" width="46" height="31" onclick="Call frmSheepForm_Event(&quot;btn5&quot;,&quot;onclick&quot;)" caption="5" tooltip="" tabstop="true" border="false" fontsize="18" alignment="center"/>
+					<BUTTON name="btn6" x="100" y="326" width="46" height="31" onclick="Call frmSheepForm_Event(&quot;btn6&quot;,&quot;onclick&quot;)" caption="6" tooltip="" tabstop="true" border="false" fontsize="18" alignment="center"/>
+					<BUTTON name="btn7" x="4" y="358" width="46" height="31" onclick="Call frmSheepForm_Event(&quot;btn7&quot;,&quot;onclick&quot;)" caption="7" tooltip="" tabstop="true" border="false" fontsize="18" alignment="center"/>
+					<BUTTON name="btn8" x="51" y="358" width="46" height="31" onclick="Call frmSheepForm_Event(&quot;btn8&quot;,&quot;onclick&quot;)" caption="8" tooltip="" tabstop="true" border="false" fontsize="18" alignment="center"/>
+					<BUTTON name="btn9" x="100" y="358" width="46" height="31" onclick="Call frmSheepForm_Event(&quot;btn9&quot;,&quot;onclick&quot;)" caption="9" tooltip="" tabstop="true" border="false" fontsize="18" alignment="center"/>
+					<BUTTON name="btn0" x="51" y="391" width="46" height="31" onclick="Call frmSheepForm_Event(&quot;btn0&quot;,&quot;onclick&quot;)" caption="0" tooltip="" tabstop="true" border="false" fontsize="18" alignment="center"/>
+					<BUTTON name="btnClear" x="3" y="391" width="46" height="31" onclick="Call frmSheepForm_Event(&quot;btnClear&quot;,&quot;onclick&quot;)" caption="Clr" tooltip="" tabstop="true" border="false" fontsize="18" alignment="center"/>
+					<EDIT name="txtTransectID" x="57" width="41" height="20" defaultvalue="" tooltip="" tabstop="true" border="true" readonly="true" sip="false" fontsize="18"/>
+					<LABEL name="Label8" x="8" width="49" height="17" caption="Transect ID:" tooltip="" group="true" border="false" fontsize="9"/>
+					<LABEL name="Label9" x="106" width="27" height="22" caption="Grp #:" tooltip="" group="true" border="false" fontsize="9"/>
+					<EDIT name="txtGroupID" x="135" width="30" height="20" defaultvalue="" tooltip="" tabstop="true" border="true" readonly="true" sip="false" fontsize="18"/>
+					<LABEL name="Label10" x="2" y="231" width="170" height="3" caption="" tooltip="" group="true" border="true" fontsize="12"/>
+					<LABEL name="Label11" x="3" y="110" width="170" height="3" caption="-------" tooltip="" group="true" border="true" fontsize="12"/>
+					<LABEL name="Label12" x="1" y="116" width="28" height="31" caption="Rams" tooltip="" group="true" border="false" fontsize="12"/>
+					<LABEL name="Label13" x="108" y="34" width="33" height="17" caption="Yrlgs:" tooltip="" group="true" border="false" fontsize="12" alignment="right"/>
+					<EDIT name="txtYrlgs" x="107" y="53" width="33" height="20" defaultvalue="" onchange="frmSheepForm_Event &quot;txtYrlgs&quot;,&quot;onchange&quot;" onkillfocus="frmSheepForm_Event &quot;txtYrlgs&quot;,&quot;onblur&quot;" onsetfocus="frmSheepForm_Event &quot;txtYrlgs&quot;,&quot;onfocus&quot;" tooltip="" tabstop="true" border="true" sip="false" fontsize="18"/>
+					<EDIT name="txtRams_3_qtrs" x="63" y="161" width="33" height="20" defaultvalue="" onchange="frmSheepForm_Event &quot;txtRams_3_qtrs&quot;,&quot;onchange&quot;" onkillfocus="frmSheepForm_Event &quot;txtRams_3_qtrs&quot;,&quot;onblur&quot;" onsetfocus="frmSheepForm_Event &quot;txtRams_3_qtrs&quot;,&quot;onfocus&quot;" tooltip="" tabstop="true" border="true" sip="false" fontsize="18"/>
+					<LABEL name="Label14" x="29" y="161" width="29" height="20" caption="¾:" tooltip="" group="true" border="false" fontsize="12" alignment="right"/>
+					<EDIT name="txtRams_LTHalf" x="63" y="116" width="33" height="20" defaultvalue="" onchange="frmSheepForm_Event &quot;txtRams_LTHalf&quot;,&quot;onchange&quot;" onkillfocus="frmSheepForm_Event &quot;txtRams_LTHalf&quot;,&quot;onblur&quot;" onsetfocus="frmSheepForm_Event &quot;txtRams_LTHalf&quot;,&quot;onfocus&quot;" tooltip="" tabstop="true" border="true" sip="false" fontsize="18"/>
+					<LABEL name="Label15" x="5" y="183" width="53" height="18" caption="&lt; full-curl:" tooltip="" group="true" border="false" fontsize="12" alignment="right"/>
+					<LABEL name="Label16" y="207" width="53" height="19" x="7" caption="≥ full-curl:" tooltip="" group="true" border="false" fontsize="12" alignment="right"/>
+					<EDIT name="txtRams_Half" x="63" y="138" width="33" height="20" defaultvalue="" onchange="frmSheepForm_Event &quot;txtRams_Half&quot;,&quot;onchange&quot;" onkillfocus="frmSheepForm_Event &quot;txtRams_Half&quot;,&quot;onblur&quot;" onsetfocus="frmSheepForm_Event &quot;txtRams_Half&quot;,&quot;onfocus&quot;" tooltip="" tabstop="true" border="true" sip="false" fontsize="18"/>
+					<LABEL name="Label17" x="105" y="137" width="23" height="19" caption="⅞:" tooltip="" group="true" border="false" fontsize="12" alignment="right"/>
+					<EDIT name="txt_7_Eighths" x="132" y="137" width="33" height="20" defaultvalue="" onchange="frmSheepForm_Event &quot;txt_7_Eighths&quot;,&quot;onchange&quot;" onkillfocus="frmSheepForm_Event &quot;txt_7_Eighths&quot;,&quot;onblur&quot;" onsetfocus="frmSheepForm_Event &quot;txt_7_Eighths&quot;,&quot;onfocus&quot;" tooltip="" tabstop="true" border="true" sip="false" fontsize="18"/>
+					<LABEL name="Label18" x="4" y="78" width="170" height="3" caption="LABEL" tooltip="" group="true" border="true"/>
+					<LISTBOX name="lstActivity" x="156" y="260" width="122" height="103" defaultvalue="" listtable="defaultvalues.dbf" listvaluefield="ACTIVITY" listtextfield="ACTIVITY" tooltip="" tabstop="true" border="true" sort="false" fontsize="12" hscroll="false"/>
+					<LABEL name="Label19" x="151" y="242" width="73" height="16" caption="Activity:" tooltip="" group="true" border="false" fontsize="12"/>
+					<EDIT name="txtEwes" x="64" y="31" width="33" height="20" defaultvalue="" onchange="frmSheepForm_Event &quot;txtEwes&quot;,&quot;onchange&quot;" onkillfocus="frmSheepForm_Event &quot;txtEwes&quot;,&quot;onblur&quot;" onsetfocus="frmSheepForm_Event &quot;txtEwes&quot;,&quot;onfocus&quot;" tooltip="" tabstop="true" border="true" sip="false" fontsize="18"/>
+					<LABEL name="Label20" x="20" y="33" width="41" height="18" caption="Ewes:" tooltip="" group="true" border="false" fontsize="12" alignment="right"/>
+					<BUTTON onclick="Call frmSheepForm_Event(&quot;btnCloseEdit&quot;,&quot;onclick&quot;)" name="btnCloseEdit" x="179" y="36" width="100" height="26" caption="Close" tooltip="" tabstop="true" border="false" fontsize="12" alignment="center"/>
+				</PAGE>
+			</FORM>
+			<FORM name="frmEndTransect" caption="End Transect" width="190" height="150" tabsvisible="false">
+				<PAGE name="PAGE1" caption="Page 1" sip="false" onvalidate="Call PreventCloseByOkOrCancel" onquerycancel="Call PreventCloseByOkOrCancel">
+					<COMBOBOX name="cboWeather" x="66" y="7" width="113" height="13" defaultvalue="" listtable="defaultvalues.dbf" listvaluefield="WEATHER" listtextfield="WEATHER" tooltip="" tabstop="true" border="false" sip="false" limittolist="false" sort="false"/>
+					<LABEL name="Label1" x="1" y="9" width="59" height="14" caption="Weather:" tooltip="" group="true" border="false" fontsize="9" alignment="right"/>
+					<BUTTON name="btnOkay" x="35" y="111" width="125" height="28" onclick="frmEndTransect_Event(&quot;ok&quot;)" caption="OK" tooltip="" tabstop="true" border="false" alignment="center"/>
+					<LABEL name="Label2" x="1" y="27" width="61" height="14" caption="Cloud Cover:" tooltip="" group="true" border="false" alignment="right"/>
+					<COMBOBOX name="cboCloudCover" x="66" y="26" width="113" height="13" defaultvalue="" listtable="defaultvalues.dbf" listvaluefield="CLOUDCOVER" listtextfield="CLOUDCOVER" tooltip="" tabstop="true" border="false" sip="false" sort="false"/>
+					<LABEL name="Label3" x="4" y="45" width="58" height="15" caption="Precipitation:" tooltip="" group="true" border="false" alignment="right"/>
+					<COMBOBOX name="cboPrecipitation" x="66" y="44" width="113" height="13" defaultvalue="" listtable="defaultvalues.dbf" listvaluefield="PRECIP" listtextfield="PRECIP" tooltip="" tabstop="true" border="false" sip="false" sort="false"/>
+					<LABEL name="Label4" x="1" y="62" width="59" height="20" caption="Turbulence Intensity:" tooltip="" group="true" border="false" alignment="right"/>
+					<COMBOBOX name="cboTurbulenceIntensity" x="65" y="63" width="113" height="13" defaultvalue="" listtable="defaultvalues.dbf" listvaluefield="TURBINT" listtextfield="TURBINT" tooltip="" tabstop="true" border="false" sip="false" limittolist="false" sort="false"/>
+					<LABEL name="Label5" x="18" y="82" width="44" height="23" caption="Turbulence Duration: " tooltip="" group="true" border="false" alignment="right"/>
+					<COMBOBOX name="cboTurbulenceDuration" x="66" y="82" width="113" height="13" defaultvalue="" listtable="defaultvalues.dbf" listvaluefield="TURBDUR" listtextfield="TURBDUR" tooltip="" tabstop="true" border="false" sip="false" limittolist="false" sort="false"/>
+				</PAGE>
+			</FORM>
+			<FORM name="frmWeather" caption="Weather" onload="frmWeather_Event &quot;frmWeather&quot;,&quot;onload&quot;" width="400" height="200" tabsvisible="false">
+				<PAGE name="PAGE1" caption="Page 1" sip="false" onvalidate="PreventCloseByOkOrCancel" onquerycancel="PreventCloseByOkOrCancel">
+					<LABEL name="Label1" x="5" y="8" width="100" height="17" caption="Cloud Cover:" tooltip="" group="true" border="false" fontsize="12"/>
+					<LABEL name="Label2" x="7" y="34" width="100" height="19" caption="Precipitation:" tooltip="" group="true" border="false" fontsize="12"/>
+					<LABEL name="Label3" x="6" y="57" width="113" height="27" caption="Turbulence Intensity:" tooltip="" group="true" border="false" fontsize="12"/>
+					<LABEL name="Label4" x="6" y="89" width="106" height="26" caption="Turbulence Duration:" tooltip="" group="true" border="false" fontsize="12"/>
+					<LABEL name="Label5" x="7" y="122" width="113" height="17" caption="Temperature (°F) :" tooltip="" group="true" border="false" fontsize="12"/>
+					<BUTTON name="btnOK" x="154" y="163" width="123" height="30" onclick="frmWeather_Event &quot;btnOK&quot;,&quot;onclick&quot;" caption="OK" tooltip="" tabstop="true" border="false" fontsize="15" alignment="center"/>
+					<BUTTON name="btn00" onclick="frmWeather_Event &quot;btn00&quot;,&quot;onclick&quot;" x="123" y="1" width="63" height="25" caption="---" tooltip="" tabstop="true" border="false" fontsize="9" alignment="center"/>
+					<BUTTON name="btn01" onclick="frmWeather_Event &quot;btn01&quot;,&quot;onclick&quot;" x="189" y="1" width="63" height="25" caption="---" tooltip="" tabstop="true" border="false" fontsize="9" alignment="center"/>
+					<BUTTON name="btn02" onclick="frmWeather_Event &quot;btn02&quot;,&quot;onclick&quot;" x="257" y="1" width="63" height="25" caption="---" tooltip="" tabstop="true" border="false" fontsize="9" alignment="center"/>
+					<BUTTON name="btn03" onclick="frmWeather_Event &quot;btn03&quot;,&quot;onclick&quot;" x="322" y="1" width="63" height="25" caption="---" tooltip="" tabstop="true" border="false" fontsize="9" alignment="center"/>
+					<BUTTON name="btn10" onclick="frmWeather_Event &quot;btn10&quot;,&quot;onclick&quot;" x="123" y="31" width="63" height="25" caption="---" tooltip="" tabstop="true" border="false" fontsize="9" alignment="center"/>
+					<BUTTON name="btn11" onclick="frmWeather_Event &quot;btn11&quot;,&quot;onclick&quot;" x="189" y="31" width="63" height="25" caption="---" tooltip="" tabstop="true" border="false" fontsize="9" alignment="center"/>
+					<BUTTON name="btn12" onclick="frmWeather_Event &quot;btn12&quot;,&quot;onclick&quot;" x="257" y="31" width="63" height="25" caption="---" tooltip="" tabstop="true" border="false" fontsize="9" alignment="center"/>
+					<BUTTON name="btn13" onclick="frmWeather_Event &quot;btn13&quot;,&quot;onclick&quot;" x="322" y="31" width="63" height="25" caption="---" tooltip="" tabstop="true" border="false" fontsize="9" alignment="center"/>
+					<BUTTON name="btn20" onclick="frmWeather_Event &quot;btn20&quot;,&quot;onclick&quot;" x="123" y="60" width="63" height="25" caption="---" tooltip="" tabstop="true" border="false" fontsize="9" alignment="center"/>
+					<BUTTON name="btn21" onclick="frmWeather_Event &quot;btn21&quot;,&quot;onclick&quot;" x="189" y="60" width="63" height="25" caption="---" tooltip="" tabstop="true" border="false" fontsize="9" alignment="center"/>
+					<BUTTON name="btn22" onclick="frmWeather_Event &quot;btn22&quot;,&quot;onclick&quot;" x="257" y="60" width="63" height="25" caption="---" tooltip="" tabstop="true" border="false" fontsize="9" alignment="center"/>
+					<BUTTON name="btn23" onclick="frmWeather_Event &quot;btn23&quot;,&quot;onclick&quot;" x="322" y="60" width="63" height="25" caption="---" tooltip="" tabstop="true" border="false" fontsize="9" alignment="center"/>
+					<BUTTON name="btn30" onclick="frmWeather_Event &quot;btn30&quot;,&quot;onclick&quot;" x="123" y="89" width="63" height="25" caption="---" tooltip="" tabstop="true" border="false" fontsize="9" alignment="center"/>
+					<BUTTON name="btn31" onclick="frmWeather_Event &quot;btn31&quot;,&quot;onclick&quot;" x="189" y="89" width="63" height="25" caption="---" tooltip="" tabstop="true" border="false" fontsize="9" alignment="center"/>
+					<BUTTON name="btn32" onclick="frmWeather_Event &quot;btn32&quot;,&quot;onclick&quot;" x="257" y="89" width="63" height="25" caption="---" tooltip="" tabstop="true" border="false" fontsize="9" alignment="center"/>
+					<BUTTON name="btn33" onclick="frmWeather_Event &quot;btn33&quot;,&quot;onclick&quot;" x="322" y="89" width="63" height="25" caption="---" tooltip="" tabstop="true" border="false" fontsize="9" alignment="center"/>
+					<EDIT name="txtTemperature" x="123" y="118" width="63" height="22" defaultvalue="" tooltip="" tabstop="true" border="true" sip="false" fontsize="18"/>
+					<BUTTON name="btnEasyNumbers" x="189" y="118" width="39" height="22" onclick="frmWeather_Event &quot;btnEasyNumbers&quot;,&quot;onclick&quot;" caption="+" tooltip="" tabstop="true" border="false" fontsize="18" alignment="center"/>
+				</PAGE>
+			</FORM>
+			<FORM name="frmEditAutoPan" caption="Edit Auto-pan" width="160" height="180" tabsvisible="false" onload="frmEditAutoPan_Event &quot;frmEditAutoPan&quot;,&quot;onload&quot;">
+				<PAGE name="PAGE1" caption="Page 1" sip="false" onquerycancel="PreventCloseByOkOrCancel" onvalidate="PreventCloseByOkOrCancel">
+					<BUTTON onclick="frmEditAutoPan_Event &quot;btnOK&quot;,&quot;onclick&quot;" name="btnOK" x="5" y="133" width="72" height="28" caption="OK" tooltip="" tabstop="true" border="false" fontsize="15" alignment="center"/>
+					<BUTTON onclick="frmEditAutoPan_Event &quot;btnUp&quot;,&quot;onclick&quot;" name="btnUp" x="32" width="96" height="33" y="1" caption="/\" tooltip="" tabstop="true" border="false" fontsize="15" alignment="center"/>
+					<BUTTON onclick="frmEditAutoPan_Event &quot;btnDown&quot;,&quot;onclick&quot;" name="btnDown" x="33" y="70" width="96" height="33" caption="\/" tooltip="" tabstop="true" border="false" fontsize="15" alignment="center"/>
+					<EDIT name="txtPecExtent" x="33" y="35" width="96" height="34" defaultvalue="" tooltip="" tabstop="true" border="true" readonly="true" sip="false" fontsize="15"/>
+					<BUTTON onclick="frmEditAutoPan_Event &quot;btnCancel&quot;,&quot;onclick&quot;" name="btnCancel" x="79" y="133" width="72" height="28" caption="Cancel" tooltip="" tabstop="true" border="false" fontsize="15" alignment="center"/>
+				</PAGE>
+			</FORM>
+			<FORM name="frmConfiguration" caption="Configuration" width="190" height="170" tabsvisible="false" onload="frmConfiguration_Event &quot;frmConfiguration&quot;,&quot;onload&quot;">
+				<PAGE name="PAGE1" caption="Page 1" sip="false">
+					<BUTTON name="btnZoomDown" x="15" y="30" width="47" height="31" onclick="frmConfiguration_Event &quot;btnZoomDown&quot;,&quot;onclick&quot;" caption="&lt;" tooltip="" tabstop="true" border="false" fontsize="24" alignment="center"/>
+					<BUTTON name="btnZoomUp" x="124" y="30" width="47" height="31" onclick="frmConfiguration_Event &quot;btnZoomUp&quot;,&quot;onclick&quot;" caption="&gt;" tooltip="" tabstop="true" border="false" fontsize="24" alignment="center"/>
+					<EDIT name="txtZoomPer" x="64" y="30" width="58" height="31" defaultvalue="" tooltip="" tabstop="true" border="true" readonly="true" sip="false" fontsize="18"/>
+					<LABEL name="Label1" x="12" y="5" width="107" height="19" caption="Custom Zoom:" tooltip="" group="true" border="false" fontsize="12"/>
+					<BUTTON name="btnCancel" x="96" y="133" width="84" height="30" onclick="frmConfiguration_Event &quot;btnCancel&quot;,&quot;onclick&quot;" caption="Cancel" tooltip="" tabstop="true" border="false" fontsize="18" alignment="center"/>
+					<BUTTON name="btnOK" x="8" y="133" width="83" height="30" onclick="frmConfiguration_Event &quot;btnOK&quot;,&quot;onclick&quot;" caption="OK" tooltip="" tabstop="true" border="false" fontsize="18" alignment="center"/>
+					<LABEL name="Label2" x="15" y="76" width="155" height="18" caption="Hide/Show Main Toolbar" tooltip="" group="true" border="false" fontsize="12"/>
+					<BUTTON name="btnHideShowMainToolbar" x="15" y="94" width="91" height="26" onclick="frmConfiguration_Event &quot;btnHideShowMainToolbar&quot;,&quot;click&quot;" caption="Hide\Show" tooltip="" tabstop="true" border="false" fontsize="12" alignment="center"/>
+				</PAGE>
+			</FORM>
+			<FORM name="frmEditTransect" caption="Edit Transect" width="230" height="190" tabsvisible="false" onload="frmEditTransect_Event &quot;frmEditTransect&quot;,&quot;onload&quot;">
+				<PAGE name="PAGE1" caption="Page 1" sip="false">
+					<LABEL name="Label1" x="3" y="2" width="138" height="18" caption="Enter Transect ID:" tooltip="" group="true" border="false" fontsize="12"/>
+					<EDIT name="txtTransectID" x="19" y="20" width="53" height="26" defaultvalue="" tooltip="" tabstop="true" border="true" sip="false" fontsize="18"/>
+					<BUTTON name="btnEditSitings" x="70" y="111" width="68" height="28" onclick="frmEditTransect_Event &quot;btnEditSitings&quot;,&quot;onclick&quot;" caption="Edit Sitings" tooltip="" tabstop="true" border="false" fontsize="12" alignment="center"/>
+					<BUTTON name="btnCancel" x="61" y="156" width="89" height="28" onclick="frmEditTransect_Event &quot;btnCancel&quot;,&quot;onclick&quot;" caption="Close" tooltip="" tabstop="true" border="false" fontsize="18" alignment="center"/>
+					<LABEL name="Label2" x="7" y="54" width="143" height="20" caption="Enter Animal ID (optional):" tooltip="" group="true" border="false" fontsize="12"/>
+					<EDIT name="txtAnimalID" x="20" y="74" width="53" height="26" defaultvalue="" tooltip="" tabstop="true" border="true" sip="false" fontsize="18"/>
+					<BUTTON onclick="frmEditTransect_Event &quot;btnAddTransectID&quot;,&quot;onclick&quot;" name="btnAddTransectID" x="73" y="19" width="41" height="27" caption="+" tooltip="" tabstop="true" border="false" fontsize="18" alignment="center"/>
+					<BUTTON onclick="frmEditTransect_Event &quot;btnAddAnimalID&quot;,&quot;onclick&quot;" name="btnAddAnimalID" x="74" y="74" width="41" height="26" caption="+" tooltip="" tabstop="true" border="false" fontsize="18" alignment="center"/>
+					<BUTTON name="btnEditWeather" x="141" y="111" width="68" height="28" onclick="frmEditTransect_Event &quot;btnEditWeather&quot;,&quot;onclick&quot;" caption="Edit Weather" tooltip="" tabstop="true" border="false" fontsize="12" alignment="center"/>
+					<LABEL name="Label3" x="5" y="119" width="60" height="20" caption="Edit:" tooltip="" group="true" border="false" fontsize="12" alignment="right"/>
+				</PAGE>
+			</FORM>
+		</FORMS>
+		<TOOLBARS>
+			<TOOLBAR name="browse" visible="false"/>
+			<TOOLBAR name="draw" visible="false"/>
+			<TOOLBAR name="main" visible="true"/>
+			<TOOLBAR name="tlbNPSTopBar" visible="true" caption="" image="" buttonsize="2">
+				<TOOLBUTTON command="openmap"/>
+				<TOOLBUTTON command="layers"/>
+				<TOOLBUTTON command="gpspositionwindow"/>
+				<TOOLBUTTON command="gpsoptions"/>
+				<TOOLBUTTON command="zoomfullextent"/>
+				<TOOLBUTTON name="tlbtnCustomZoom" shortcut="" image="customzoom.png" onclick="tlbtnCustomZoom_Click" tooltip="Custom Zoom"/>
+				<TOOLBUTTON name="tlbtnAutoPan" shortcut="" image="editautopan.png" onclick="tlbtnEditAutPan_Click" tooltip="Auto-Pan"/>
+				<TOOLBUTTON command="modepan"/>
+				<TOOLBUTTON name="tlbtnConfig" shortcut="" image="config.png" onclick="tlbtnConfiguration_Click" tooltip="Configuration"/>
+			</TOOLBAR>
+			<TOOLBAR name="tlbNPSTransToolbar" caption="NPS Animal Tracking" visible="true" image="" buttonsize="2">
+				<TOOLBUTTON name="tlbtnLoadMap" shortcut="F2" image="loadmap.png" onclick="Call tlbtnLoapMap_Click" tooltip="Open map"/>
+				<SEPARATOR/>
+				<TOOLBUTTON name="tlbtnFindTransect" shortcut="" image="findtransect.png" onclick="Call tlbtnFindTransect_Click" tooltip="Find a Transect"/>
+				<SEPARATOR/>
+				<SEPARATOR/>
+				<TOOLBUTTON name="tlbtnSelectTransect" shortcut="F3" image="selecttransect.png" onclick="Call tlbtnSelectTransect_Click" tooltip="Select a transect to fly"/>
+				<TOOLBUTTON name="tlbtnSelectTransectDown" shortcut="" image="selecttransectdown.png" onclick="Call tlbtnSelectTransectDown_Click" tooltip="Select a transect to fly"/>
+				<SEPARATOR/>
+				<SEPARATOR/>
+				<TOOLBUTTON name="tlbtnStartTransect" shortcut="F4" image="starttransect.png" onclick="Call tlbtnStartTransect_Click" tooltip="Start the transect and begin recording data"/>
+				<SEPARATOR/>
+				<SEPARATOR/>
+				<TOOLBUTTON name="tlbtnMarkAnimal" shortcut="F5" image="offtransect.png" onclick="Call tlbtnMarkAnimal_Click" tooltip="Go Off Transect"/>
+				<SEPARATOR/>
+				<SEPARATOR/>
+				<TOOLBUTTON name="tlbtnPilotRight" shortcut="" image="observeright.png" onclick="ObserveDirToolButtons_Event &quot;tlbtnPilotRight&quot;,&quot;onclick&quot;" tooltip="Pilot's view direction"/>
+				<TOOLBUTTON name="tlbtnPilotLeft" shortcut="" image="observeleft.png" onclick="ObserveDirToolButtons_Event &quot;tlbtnPilotLeft&quot;,&quot;onclick&quot;" tooltip="Pilot's view direction"/>
+				<SEPARATOR/>
+				<SEPARATOR/>
+				<SEPARATOR/>
+				<SEPARATOR/>
+				<SEPARATOR/>
+				<SEPARATOR/>
+				<SEPARATOR/>
+				<SEPARATOR/>
+				<SEPARATOR/>
+				<TOOLBUTTON name="tlbtnEndTransect" shortcut="F6" image="endtransect.png" onclick="Call tlbtnEndTransect_Click" tooltip="End transect"/>
+				<SEPARATOR/>
+				<SEPARATOR/>
+				<SEPARATOR/>
+				<SEPARATOR/>
+				<TOOLBUTTON name="tlbtnLand" shortcut="F7" image="Land.png" onclick="Call tlbtnEndLand_Click" tooltip="Land"/>
+				<SEPARATOR/>
+				<SEPARATOR/>
+				<SEPARATOR/>
+				<TOOLBUTTON onclick="tlbtnEditTransect_Click" name="tlbtnEditTransect" shortcut="" image="edittransect.png"/>
+			</TOOLBAR>
+			<TOOLBAR name="tlbNPSDisplay" caption="Distance Traveled: 0.000 km   |   Transect Status: ---   |   Transect ID: ---   | " visible="true" image="" buttonsize="3"/>
+		</TOOLBARS>
+		<SYSTEMOBJECTS>
+			<GPS onposition="Call GPS_GetPosition"/>
+			<MAP OnAfterDraw="" onselectionchanged="Call Map_SelectionChange" OnPointerDown=""/>
+		</SYSTEMOBJECTS>
+	</APPLET>
+	<SCRIPT src="NPSApplet.vbs" language="VBScript"/>
+	<SCRIPT src="NPSHelper.vbs" language="VBScript"/>
+</ArcPad>

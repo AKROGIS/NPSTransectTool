@@ -63,4 +63,4 @@ last tool being optional.
 These tools will not work unless you are in a copy of
 ArcMap document in `NPS_Transect_Map_and_Database.zip`.
 
-5) See the SOP in the Docs folder.  Note the installation
+5) See `Docs/NPS SOP_v2.0.5.doc` for additional details.
